@@ -13,7 +13,7 @@
 -- Brief: Entry point for RFApp – initializes shared telemetry, lays out apps via grid,
 -- draws widget placeholder in non-app mode, and handles audio/alerts in background.
 
-local APP_VERSION = "0.15"
+local APP_VERSION = "0.22"
 
 -- Load internal modules (copied from RFBattery subset)
 --Main modules
@@ -22,6 +22,88 @@ local DisplayEngine = loadScript("/WIDGETS/RFApp/display_engine.lua", "tcd")()
 local UI = loadScript("/WIDGETS/RFApp/simple_ui.lua", "tcd")()
 local telemetry = loadScript("/WIDGETS/RFApp/telemetry.lua", "tcd")()
 local menu = loadScript("/WIDGETS/RFApp/menu.lua", "tcd")()
+
+-- Module registry for dynamic app loading
+-- Maps app names to their module file paths. Apps can be enabled/disabled via config.Apps[appName].enabled
+-- This replaces hard-coded loadScript calls and makes it easy to add new apps by just updating the registry
+local moduleRegistry = {
+    Battery = {
+        filters = "APPS/Battery/filters.lua",
+        calc = "APPS/Battery/calc.lua",
+        display = "APPS/Battery/display.lua",
+        audio = "APPS/Battery/audio.lua",
+    },
+    BattTelem = {
+        display = "APPS/BattTelem/display.lua",
+    },
+    Arm = {
+        calc = "APPS/Arm/calc.lua",
+        display = "APPS/Arm/display.lua",
+        audio = "APPS/Arm/audio.lua",
+    },
+    Logo = {
+        display = "APPS/Logo/display.lua",
+    },
+    Events = {
+        display = "APPS/Events/display.lua",
+        store = "APPS/Events/store.lua",
+    },
+    TxBatt = {
+        display = "APPS/TxBatt/display.lua",
+    },
+    Signal = {
+        display = "APPS/Signal/display.lua",
+    },
+    Pid = {
+        display = "APPS/Pid/display.lua",
+    },
+    Rate = {
+        -- Rate audio moved to unified audio.lua
+    },
+    Audio = {
+        profile = "APPS/Pid/audio.lua", -- Unified audio handling for Rate and PID (moved to Pid folder)
+    },
+    Rpm = {
+        calc = "APPS/Rpm/calc.lua",
+        display = "APPS/Rpm/display.lua",
+    },
+    Gov = {
+        calc = "APPS/Gov/calc.lua",
+        display = "APPS/Gov/display.lua",
+    },
+    Rescue = {
+        calc = "APPS/Rescue/calc.lua",
+        display = "APPS/Rescue/display.lua",
+        audio = "APPS/Rescue/audio.lua",
+    },
+}
+
+-- Load modules from registry based on config.Apps enabled flags
+local function loadModulesFromRegistry(registry, config, basePath)
+    local modules = {}
+    basePath = basePath or "/WIDGETS/RFApp/"
+
+    for appName, appConfig in pairs(config.Apps) do
+        if appConfig.enabled and registry[appName] then
+            modules[appName] = {}
+            for moduleName, modulePath in pairs(registry[appName]) do
+                local fullPath = basePath .. modulePath
+                local success, module = pcall(loadScript, fullPath, "tcd")
+                if success and module then
+                    modules[appName][moduleName] = module()
+                else
+                    print("RFApp: Failed to load module: " .. fullPath)
+                    modules[appName][moduleName] = {} -- Provide empty table as fallback
+                end
+            end
+        end
+    end
+
+    return modules
+end
+
+-- Load app modules dynamically
+local appModules = loadModulesFromRegistry(moduleRegistry, config)
 
 -- Alias the EdgeTX LVGL bridge with an app-specific name
 local function getSettingsView()
@@ -33,39 +115,35 @@ local function getSettingsView()
     return view
 end
 
--- Battery app modules
-local filters = loadScript("/WIDGETS/RFApp/APPS/Battery/filters.lua", "tcd")()
-local calc = loadScript("/WIDGETS/RFApp/APPS/Battery/calc.lua", "tcd")()
-local displayMon = loadScript("/WIDGETS/RFApp/APPS/Battery/display.lua", "tcd")()
-local battAudio = loadScript("/WIDGETS/RFApp/APPS/Battery/audio.lua", "tcd")()
-local battTelemDisplay = loadScript("/WIDGETS/RFApp/APPS/BattTelem/display.lua", "tcd")()
+-- App modules loaded dynamically from registry (with nil safety)
+local filters = (appModules.Battery and appModules.Battery.filters) or {}
+local calc = (appModules.Battery and appModules.Battery.calc) or {}
+local displayMon = (appModules.Battery and appModules.Battery.display) or {}
+local battAudio = (appModules.Battery and appModules.Battery.audio) or {}
+local battTelemDisplay = (appModules.BattTelem and appModules.BattTelem.display) or {}
 
--- Arm app modules
-local armCalc = loadScript("/WIDGETS/RFApp/APPS/Arm/calc.lua", "tcd")()
-local armDisplay = loadScript("/WIDGETS/RFApp/APPS/Arm/display.lua", "tcd")()
-local armAudio = loadScript("/WIDGETS/RFApp/APPS/Arm/audio.lua", "tcd")()
+local armCalc = (appModules.Arm and appModules.Arm.calc) or {}
+local armDisplay = (appModules.Arm and appModules.Arm.display) or {}
+local armAudio = (appModules.Arm and appModules.Arm.audio) or {}
 
--- Logo app modules
-local logoDisplay = loadScript("/WIDGETS/RFApp/APPS/Logo/display.lua", "tcd")()
--- Events app modules
-local eventsDisplay = loadScript("/WIDGETS/RFApp/APPS/Events/display.lua", "tcd")()
-local eventsStore = loadScript("/WIDGETS/RFApp/APPS/Events/store.lua", "tcd")()
--- TX battery app
-local txBattDisplay = loadScript("/WIDGETS/RFApp/APPS/TxBatt/display.lua", "tcd")()
-local signalDisplay = loadScript("/WIDGETS/RFApp/APPS/Signal/display.lua", "tcd")()
-local pidDisplay = loadScript("/WIDGETS/RFApp/APPS/Pid/display.lua", "tcd")()
-local pidAudio = loadScript("/WIDGETS/RFApp/APPS/Pid/audio.lua", "tcd")()
-local rateAudio = loadScript("/WIDGETS/RFApp/APPS/Rate/audio.lua", "tcd")()
--- RPM app modules
-local rpmCalc = loadScript("/WIDGETS/RFApp/APPS/Rpm/calc.lua", "tcd")()
-local rpmDisplay = loadScript("/WIDGETS/RFApp/APPS/Rpm/display.lua", "tcd")()
--- Governor app modules
-local govCalc = loadScript("/WIDGETS/RFApp/APPS/Gov/calc.lua", "tcd")()
-local govDisplay = loadScript("/WIDGETS/RFApp/APPS/Gov/display.lua", "tcd")()
--- Rescue app modules
-local rescueCalc = loadScript("/WIDGETS/RFApp/APPS/Rescue/calc.lua", "tcd")()
-local rescueDisplay = loadScript("/WIDGETS/RFApp/APPS/Rescue/display.lua", "tcd")()
-local rescueAudio = loadScript("/WIDGETS/RFApp/APPS/Rescue/audio.lua", "tcd")()
+local logoDisplay = (appModules.Logo and appModules.Logo.display) or {}
+local eventsDisplay = (appModules.Events and appModules.Events.display) or {}
+local eventsStore = (appModules.Events and appModules.Events.store) or {}
+
+local txBattDisplay = (appModules.TxBatt and appModules.TxBatt.display) or {}
+local signalDisplay = (appModules.Signal and appModules.Signal.display) or {}
+local pidDisplay = (appModules.Pid and appModules.Pid.display) or {}
+local profileAudio = (appModules.Audio and appModules.Audio.profile) or {}
+
+local rpmCalc = (appModules.Rpm and appModules.Rpm.calc) or {}
+local rpmDisplay = (appModules.Rpm and appModules.Rpm.display) or {}
+
+local govCalc = (appModules.Gov and appModules.Gov.calc) or {}
+local govDisplay = (appModules.Gov and appModules.Gov.display) or {}
+
+local rescueCalc = (appModules.Rescue and appModules.Rescue.calc) or {}
+local rescueDisplay = (appModules.Rescue and appModules.Rescue.display) or {}
+local rescueAudio = (appModules.Rescue and appModules.Rescue.audio) or {}
 
 -- Cache globals
 local getValue = getValue
@@ -172,39 +250,39 @@ update = function(wgt, options)
         wgt.engine.setConfig(config)
         wgt.engine.placeConfiguredWidgets(wgt, config, {
             battery = function(w, x, y, ww, hh)
-                displayMon.drawEighthMonitor(w, x, y, ww, hh)
+                if displayMon.drawEighthMonitor then displayMon.drawEighthMonitor(w, x, y, ww, hh) end
             end,
             battTelem = function(w, x, y, ww, hh)
-                battTelemDisplay.draw(w, x, y, ww, hh)
+                if battTelemDisplay.draw then battTelemDisplay.draw(w, x, y, ww, hh) end
             end,
             arm = function(w, x, y, ww, hh)
-                armDisplay.draw(w, x, y, ww, hh)
+                if armDisplay.draw then armDisplay.draw(w, x, y, ww, hh) end
             end,
             logo = function(w, rx, ry, rw, rh)
-                logoDisplay.draw(w, rx, ry, rw, rh)
+                if logoDisplay.draw then logoDisplay.draw(w, rx, ry, rw, rh) end
             end,
             events = function(w, rx, ry, rw, rh)
-                eventsDisplay.draw(w, rx, ry, rw, rh)
+                if eventsDisplay.draw then eventsDisplay.draw(w, rx, ry, rw, rh) end
                 -- remember rect for hit-testing
                 w._eventsRect = { x = rx, y = ry, w = rw, h = rh }
             end,
             txBatt = function(w, rx, ry, rw, rh)
-                txBattDisplay.draw(w, rx, ry, rw, rh)
+                if txBattDisplay.draw then txBattDisplay.draw(w, rx, ry, rw, rh) end
             end,
             rescue = function(w, rx, ry, rw, rh)
-                rescueDisplay.draw(w, rx, ry, rw, rh)
+                if rescueDisplay.draw then rescueDisplay.draw(w, rx, ry, rw, rh) end
             end,
             signal = function(w, rx, ry, rw, rh)
-                signalDisplay.draw(w, rx, ry, rw, rh)
+                if signalDisplay.draw then signalDisplay.draw(w, rx, ry, rw, rh) end
             end,
             pid = function(w, rx, ry, rw, rh)
-                pidDisplay.draw(w, rx, ry, rw, rh)
+                if pidDisplay.draw then pidDisplay.draw(w, rx, ry, rw, rh) end
             end,
             rpm = function(w, rx, ry, rw, rh)
-                rpmDisplay.draw(w, rx, ry, rw, rh)
+                if rpmDisplay.draw then rpmDisplay.draw(w, rx, ry, rw, rh) end
             end,
             gov = function(w, rx, ry, rw, rh)
-                govDisplay.draw(w, rx, ry, rw, rh)
+                if govDisplay.draw then govDisplay.draw(w, rx, ry, rw, rh) end
             end,
         }, wgt.rfLogo)
     end
@@ -307,21 +385,27 @@ end
 
 local function background(wgt)
     if (wgt == nil) then return end
-    wgt.tools.detectResetEvent(wgt, function(w) calc.onTelemetryResetEvent(w, config) end)
-    telemetry.update(wgt, config)
-    calc.calculateBatteryData(wgt, config, filters, calc, nil)
+
+    -- Safe module function calls with nil checks
+    if wgt.tools and wgt.tools.detectResetEvent then
+        wgt.tools.detectResetEvent(wgt, function(w) if calc.onTelemetryResetEvent then calc.onTelemetryResetEvent(w, config) end end)
+    end
+    if telemetry.update then telemetry.update(wgt, config) end
+    if calc.calculateBatteryData then calc.calculateBatteryData(wgt, config, filters, calc, nil) end
+
     -- update ARM state and play arm/disarm sounds on change
-    armCalc.update(wgt, config)
-    armAudio.handleArmAudio(wgt, config)
-    rescueCalc.update(wgt, config)
-    rescueAudio.handleRescueAudio(wgt, config)
-    battAudio.handleBatteryAlerts(wgt, config)
+    if armCalc.update then armCalc.update(wgt, config) end
+    if armAudio.handleArmAudio then armAudio.handleArmAudio(wgt, config) end
+    if rescueCalc.update then rescueCalc.update(wgt, config) end
+    if rescueAudio.handleRescueAudio then rescueAudio.handleRescueAudio(wgt, config) end
+    if battAudio.handleBatteryAlerts then battAudio.handleBatteryAlerts(wgt, config) end
+
     -- update RPM from Hspd telemetry
-    rpmCalc.update(wgt, config)
+    if rpmCalc.update then rpmCalc.update(wgt, config) end
     -- update Governor state from Gov telemetry
-    govCalc.update(wgt, config)
-    pidAudio.handlePidAudio(wgt, config)
-    rateAudio.handleRateAudio(wgt, config)
+    if govCalc.update then govCalc.update(wgt, config) end
+    if profileAudio.handlePidAudio then profileAudio.handlePidAudio(wgt, config) end
+    if profileAudio.handleRateAudio then profileAudio.handleRateAudio(wgt, config) end
     -- Log app removed: no log cache updates
 end
 
@@ -333,8 +417,6 @@ local function refresh(wgt, event, touchState)
 
     -- reset per-cycle audio flag so alerts can be processed once per UI refresh
     wgt.audioProcessedThisCycle = false
-
-    background(wgt)
 
     if lvgl and lvgl.isFullScreen and lvgl.isFullScreen() and wgt.ui and wgt.ui.settingsOpen then
         return

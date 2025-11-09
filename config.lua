@@ -137,6 +137,7 @@ M.TXBATT_MAX = 8.4 -- (4.2V per cell)
 ---------------------------------------------------------------------
 M.Apps = {
     Battery = {
+        enabled = true,
         GRID = { row = 6, rows = 2, col = 1, cols = 8 },
         singleStepThreshold = M.singleStepThreshold,
         battLowMargin = M.battLowMargin,
@@ -144,15 +145,52 @@ M.Apps = {
     },
 
     BattTelem = {
-        GRID = { row = 3, rows = 3, col = 7, cols = 2 },},
-        Arm = {GRID = { row = 1, rows = 1, col = 2, cols = 1 },},
-        Rescue = {GRID = { row = 1, rows = 1, col = 6, cols = 1 },},
-        Events = {GRID = { row = 8, rows = 1, col = 1, cols = 6 },},
-        TxBatt = {GRID = { row = 1, rows = 1, col = 8, cols = 1 },},
-        Rpm = {GRID = { row = 3, rows = 2, col = 1, cols = 2 },},
-        Gov = {GRID = { row = 1, rows = 1, col = 3, cols = 2 },},
-        Pid = {GRID = { row = 1, rows = 1, col = 5, cols = 1 },},
-    }
+        enabled = true,
+        GRID = { row = 3, rows = 3, col = 7, cols = 2 },
+    },
+    Arm = {
+        enabled = true,
+        GRID = { row = 1, rows = 1, col = 2, cols = 1 },
+    },
+    Rescue = {
+        enabled = true,
+        GRID = { row = 1, rows = 1, col = 6, cols = 1 },
+    },
+    Events = {
+        enabled = true,
+        GRID = { row = 8, rows = 1, col = 1, cols = 6 },
+    },
+    TxBatt = {
+        enabled = true,
+        GRID = { row = 1, rows = 1, col = 8, cols = 1 },
+    },
+    Rpm = {
+        enabled = true,
+        GRID = { row = 3, rows = 2, col = 1, cols = 2 },
+    },
+    Gov = {
+        enabled = true,
+        GRID = { row = 1, rows = 1, col = 3, cols = 2 },
+    },
+    Pid = {
+        enabled = true,
+        GRID = { row = 1, rows = 1, col = 5, cols = 1 },
+    },
+    Logo = {
+        enabled = true,
+        GRID = { row = 1, rows = 1, col = 1, cols = 1 },
+    },
+    Signal = {
+        enabled = true,
+        GRID = { row = 1, rows = 1, col = 7, cols = 1 },
+    },
+    Rate = {
+        enabled = true,
+    },
+    Audio = {
+        enabled = true,
+    },
+}
 
 ---------------------------------------------------------------------
 -- 7. UI Chrome & Submenus
