@@ -13,12 +13,25 @@
 -- Brief: Entry point for RFApp – initializes shared telemetry, lays out apps via grid,
 -- draws widget placeholder in non-app mode, and handles audio/alerts in background.
 
+local APP_VERSION = "0.13"
+
 -- Load internal modules (copied from RFBattery subset)
 --Main modules
 local config = loadScript("/WIDGETS/RFApp/config.lua", "tcd")()
 local DisplayEngine = loadScript("/WIDGETS/RFApp/display_engine.lua", "tcd")()
 local UI = loadScript("/WIDGETS/RFApp/simple_ui.lua", "tcd")()
 local telemetry = loadScript("/WIDGETS/RFApp/telemetry.lua", "tcd")()
+local menu = loadScript("/WIDGETS/RFApp/menu.lua", "tcd")()
+
+-- Alias the EdgeTX LVGL bridge with an app-specific name
+local function getSettingsView()
+    local view = rawget(_G, "lvgl")
+    if not view and lcd and lcd.enterFullScreen then
+        lcd.enterFullScreen()
+        view = rawget(_G, "lvgl")
+    end
+    return view
+end
 
 -- Battery app modules
 local filters = loadScript("/WIDGETS/RFApp/APPS/Battery/filters.lua", "tcd")()
@@ -127,21 +140,6 @@ local function drawWidgetPlaceholder(wgt)
     lcd.drawText(x + w / 2, y + h / 2 + 18, "Long press to launch", CENTER + VCENTER + COLOR_THEME_PRIMARY2)
 end
 
--- Draw close X button in top-right corner
--- Draw and handle Menu button (replaces Settings button)
-local function drawAndHandleMenuButton(wgt, event, touchState)
-    -- Menu button positioned by BTN_GRID span
-    local span = normalizeGridSpan(config.BTN_GRID, { row = 8, rows = 1, col = 7, cols = 2 })
-    local cellW = math.floor(LCD_W / config.GRID_COLS)
-    local cellH = math.floor(LCD_H / config.GRID_ROWS)
-    local btnX = (span.col - 1) * cellW
-    local btnY = (span.row - 1) * cellH
-    local btnW = span.cols * cellW
-    local btnH = span.rows * cellH
-    
-    UI.drawButton(btnX, btnY, btnW, btnH, "Menu")
-    UI.handleButton(event, touchState, btnX, btnY, btnW, btnH)
-end
 update = function(wgt, options)
     if (wgt == nil) then return end
     wgt.options = options
@@ -215,9 +213,9 @@ end
 local function create(zone, options)
     local initialColor
     if config.HARDWIRED_TEXT_COLOR_TOGGLE == 1 then
-        initialColor = lcd.RGB(0, 0, 0)
-    else
-        initialColor = lcd.RGB(255, 255, 255)
+            initialColor = lcd.RGB(0, 0, 0)
+        else
+            initialColor = lcd.RGB(255, 255, 255)
     end
 
     local wgt = {
@@ -338,6 +336,9 @@ local function refresh(wgt, event, touchState)
 
     background(wgt)
 
+    if lvgl and lvgl.isFullScreen and lvgl.isFullScreen() and wgt.ui and wgt.ui.settingsOpen then
+        return
+    end
     -- Detect app mode transition to refresh cached state
     local appNow = isAppMode(wgt, event)
     if appNow and not wgt._appModeActive then
@@ -350,26 +351,26 @@ local function refresh(wgt, event, touchState)
     -- Full-screen mode only when zone actually spans the screen (avoid long-press events in widget mode)
     if appNow then
         -- Always draw menu button (no actions wired behind it)
-        drawAndHandleMenuButton(wgt, event, touchState)
-
+        menu.drawAndHandleMenuButton(wgt, event, touchState, config, UI, normalizeGridSpan)
+        
         -- Always render apps first
         wgt.engine.render(wgt)
         
         -- Events fullscreen toggle
-        if touchState and event == EVT_TOUCH_TAP then
-            if wgt.ui and wgt.ui.eventsOpen then
-                wgt.ui.eventsOpen = false
-            elseif wgt._eventsRect then
-                local r = wgt._eventsRect
-                if touchState.x >= r.x and touchState.x <= r.x + r.w and touchState.y >= r.y and touchState.y <= r.y + r.h then
+            if touchState and event == EVT_TOUCH_TAP then
+                if wgt.ui and wgt.ui.eventsOpen then
+                    wgt.ui.eventsOpen = false
+                elseif wgt._eventsRect then
+                    local r = wgt._eventsRect
+                    if touchState.x >= r.x and touchState.x <= r.x + r.w and touchState.y >= r.y and touchState.y <= r.y + r.h then
                     if not wgt.ui then wgt.ui = {} end
-                    wgt.ui.eventsOpen = true
+                        wgt.ui.eventsOpen = true
+                    end
                 end
             end
-        end
-        if wgt.ui and wgt.ui.eventsOpen then
-            eventsDisplay.drawFull(wgt)
-            return
+            if wgt.ui and wgt.ui.eventsOpen then
+                eventsDisplay.drawFull(wgt)
+                return
         end
         return
     end
