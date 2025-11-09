@@ -13,7 +13,7 @@
 -- Brief: Entry point for RFApp – initializes shared telemetry, lays out apps via grid,
 -- draws widget placeholder in non-app mode, and handles audio/alerts in background.
 
-local APP_VERSION = "0.13"
+local APP_VERSION = "0.15"
 
 -- Load internal modules (copied from RFBattery subset)
 --Main modules
@@ -136,7 +136,7 @@ local function drawWidgetPlaceholder(wgt)
     local w = wgt.zone.w
     local h = wgt.zone.h
     lcd.drawRectangle(x, y, w, h, COLOR_THEME_PRIMARY3)
-    lcd.drawText(x + w / 2, y + h / 2 - 8, "RFApp", DBLSIZE + CENTER + VCENTER + COLOR_THEME_PRIMARY2)
+    lcd.drawText(x + w / 2, y + h / 2 - 12, "RFApp v" .. APP_VERSION, DBLSIZE + CENTER + VCENTER + COLOR_THEME_PRIMARY2)
     lcd.drawText(x + w / 2, y + h / 2 + 18, "Long press to launch", CENTER + VCENTER + COLOR_THEME_PRIMARY2)
 end
 
