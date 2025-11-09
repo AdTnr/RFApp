@@ -42,6 +42,26 @@ function M.update(wgt, config)
     return t
 end
 
+-- Calculate hash of telemetry values for change detection optimization
+function M.calculateTelemetryHash(telem)
+    if not telem then return 0 end
+    -- Hash key telemetry values that affect display
+    local hash = 0
+    if telem.volt then hash = hash + math.floor(telem.volt * 100) end
+    if telem.current then hash = hash + math.floor(telem.current * 100) end
+    if telem.mah then hash = hash + telem.mah end
+    if telem.percent then hash = hash + telem.percent end
+    if telem.cells then hash = hash + telem.cells end
+    if telem.rssi then hash = hash + telem.rssi end
+    if telem.pid then hash = hash + telem.pid end
+    if telem.rate then hash = hash + telem.rate end
+    if telem.arm then hash = hash + telem.arm end
+    if telem.rescue then hash = hash + telem.rescue end
+    if telem.rpm then hash = hash + telem.rpm end
+    if telem.gov then hash = hash + telem.gov end
+    return hash
+end
+
 return M
 
 

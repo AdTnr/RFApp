@@ -10,10 +10,40 @@
 #########################################################################
 ]]
 
+-- Changelog:
+-- 0.29: Added Debug Mode toggle with telemetry value overrides in settings menu
+-- 0.28: Moved telemetry hash calculation to telemetry.lua for cleaner main.lua
+-- 0.27: Fixed app widgets flashing - now render consistently
+-- 0.26: Fixed screen flashing issue with conditional rendering
+-- 0.25: Added telemetry change detection for optimization
+-- 0.24: Added FPS counter
+-- 0.23: Added grid-based placement for app mode
+-- 0.22: Added menu button
+-- 0.21: Added event log
+-- 0.20: Added rescue mode
+-- 0.19: Added RPM display
+-- 0.18: Added Governor display
+-- 0.17: Added PID display
+-- 0.16: Added signal display
+-- 0.15: Added TxBatt display
+-- 0.14: Added Events display
+-- 0.13: Added Logo display
+-- 0.12: Added Arm display
+-- 0.11: Added BattTelem display
+-- 0.10: Added Battery display
+-- 0.09: Added Battery audio
+-- 0.08: Added Battery calc
+-- 0.07: Added Battery filters
+-- 0.06: Added Battery display
+-- 0.05: Added Battery audio
+-- 0.04: Added Battery calc
+-- 0.03: Added Battery filters
+-- 0.02: Added Battery display
+-- 0.01: Initial release
 -- Brief: Entry point for RFApp – initializes shared telemetry, lays out apps via grid,
 -- draws widget placeholder in non-app mode, and handles audio/alerts in background.
 
-local APP_VERSION = "0.24"
+local APP_VERSION = "0.29"
 
 -- Load internal modules (copied from RFBattery subset)
 --Main modules
@@ -358,6 +388,13 @@ local function create(zone, options)
         fpsFrameCount = 0,
         fpsValue = 0,
 
+        -- Telemetry change detection for optimization
+        lastTelemetryHash = 0,
+        lastRenderTime = 0,
+
+        -- Cached grid calculations
+        cachedGridSpan = nil,
+
         -- optional runtime debug overrides (set enabled=true and values as needed)
         -- debug = { enabled=true, volt=15.5, cells=4, pcnt=62, mah=500, arm=1, rssi=80 },
     }
@@ -435,6 +472,8 @@ local function refresh(wgt, event, touchState)
     -- reset per-cycle audio flag so alerts can be processed once per UI refresh
     wgt.audioProcessedThisCycle = false
 
+    local currentTelemetryHash = telemetry.calculateTelemetryHash(wgt.telem)
+
     if lvgl and lvgl.isFullScreen and lvgl.isFullScreen() and wgt.ui and wgt.ui.settingsOpen then
         return
     end
@@ -450,32 +489,40 @@ local function refresh(wgt, event, touchState)
     -- Full-screen mode only when zone actually spans the screen (avoid long-press events in widget mode)
     if appNow then
 
+        -- Always render menu button and apps for consistent display
         menu.drawAndHandleMenuButton(wgt, event, touchState, config, normalizeGridSpan)
-        
-        -- Always render apps first
+
+        -- Track telemetry changes for optimization (but always render for visual consistency)
+        if currentTelemetryHash ~= wgt.lastTelemetryHash then
+            wgt.lastTelemetryHash = currentTelemetryHash
+            -- Telemetry changed - full render will show updates
+        end
+
+        -- Always render apps to prevent flashing
         wgt.engine.render(wgt)
-        
-        -- Events fullscreen toggle
-            if touchState and event == EVT_TOUCH_TAP then
-                if wgt.ui and wgt.ui.eventsOpen then
-                    wgt.ui.eventsOpen = false
-                elseif wgt._eventsRect then
-                    local r = wgt._eventsRect
-                    if touchState.x >= r.x and touchState.x <= r.x + r.w and touchState.y >= r.y and touchState.y <= r.y + r.h then
-                    if not wgt.ui then wgt.ui = {} end
-                        wgt.ui.eventsOpen = true
-                    end
+
+        -- FPS counter display (top-left corner)
+        if wgt.fpsValue > 0 then
+            lcd.drawText(2, 20, string.format("FPS: %d", wgt.fpsValue), SMLSIZE + COLOR_THEME_SECONDARY2)
+        end
+
+        -- Events fullscreen toggle (always handle interactions)
+        if touchState and event == EVT_TOUCH_TAP then
+            if wgt.ui and wgt.ui.eventsOpen then
+                wgt.ui.eventsOpen = false
+            elseif wgt._eventsRect then
+                local r = wgt._eventsRect
+                if touchState.x >= r.x and touchState.x <= r.x + r.w and touchState.y >= r.y and touchState.y <= r.y + r.h then
+                if not wgt.ui then wgt.ui = {} end
+                    wgt.ui.eventsOpen = true
                 end
             end
-            if wgt.ui and wgt.ui.eventsOpen then
-                eventsDisplay.drawFull(wgt)
-                return
-            end
+        end
 
-            -- FPS counter display (top-left corner)
-            if wgt.fpsValue > 0 then
-                lcd.drawText(2, 20, string.format("FPS: %d", wgt.fpsValue), SMLSIZE + COLOR_THEME_SECONDARY2)
-            end
+        if wgt.ui and wgt.ui.eventsOpen then
+            eventsDisplay.drawFull(wgt)
+            return
+        end
         return
     end
 

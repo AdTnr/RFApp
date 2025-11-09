@@ -40,6 +40,24 @@ local function openSettingsPage(wgt)
     if not lvgl then return end
     if not wgt.ui then wgt.ui = {} end
 
+    -- Initialize debug settings
+    if not wgt.debug then
+        wgt.debug = {
+            enabled = false,
+            volt = 12.6,
+            cells = 4,
+            pcnt = 85,
+            mah = 1200,
+            arm = 0,
+            rssi = 95,
+            rpm = 1200,
+            gov = 1,
+            rate = 2,
+            pid = 1,
+            resc = 0
+        }
+    end
+
     wgt.ui.settingsValue = wgt.ui.settingsValue or 0
     wgt.ui.settingsOpen = true
 
@@ -47,7 +65,7 @@ local function openSettingsPage(wgt)
 
     local page = lvgl.page({
         title = "RFApp Settings",
-        subtitle = "Demo Control",
+        subtitle = "Debug & Control",
         back = function()
             closeSettingsPage(wgt)
         end,
@@ -57,14 +75,33 @@ local function openSettingsPage(wgt)
         {
             type = "box",
             flexFlow = lvgl.FLOW_COLUMN,
-            flexPad = lvgl.PAD_LARGE,
+            flexPad = lvgl.PAD_MED,
             w = LCD_W,
             children = {
+                -- Debug Mode Toggle
                 {
                     type = "box",
                     flexFlow = lvgl.FLOW_ROW,
                     children = {
-                        { type = "label", text = "Demo Value:", font = BOLD },
+                        { type = "label", text = "Debug Mode:", font = BOLD, w = 120 },
+                        {
+                            type = "toggle",
+                            get = function() return wgt.debug.enabled and 1 or 0 end,
+                            set = function(v)
+                                wgt.debug.enabled = (v ~= 0)
+                                -- Force page rebuild to show/hide debug fields
+                                openSettingsPage(wgt)
+                            end,
+                        },
+                    },
+                },
+
+                -- Demo Value (always visible)
+                {
+                    type = "box",
+                    flexFlow = lvgl.FLOW_ROW,
+                    children = {
+                        { type = "label", text = "Demo Value:", font = BOLD, w = 120 },
                         {
                             type = "numberEdit",
                             min = -1024,
@@ -80,6 +117,181 @@ local function openSettingsPage(wgt)
                         },
                     },
                 },
+
+                -- Debug telemetry overrides (only visible when debug mode enabled)
+                wgt.debug.enabled and {
+                    type = "box",
+                    flexFlow = lvgl.FLOW_COLUMN,
+                    flexPad = lvgl.PAD_SMALL,
+                    children = {
+                        { type = "label", text = "Debug Telemetry Values:", font = BOLD },
+                        {
+                            type = "box",
+                            flexFlow = lvgl.FLOW_ROW,
+                            children = {
+                                { type = "label", text = "Voltage:", w = 80 },
+                                {
+                                    type = "numberEdit",
+                                    min = 0,
+                                    max = 50,
+                                    step = 0.1,
+                                    w = 70,
+                                    get = function() return wgt.debug.volt end,
+                                    set = function(v) wgt.debug.volt = v end,
+                                },
+                            },
+                        },
+                        {
+                            type = "box",
+                            flexFlow = lvgl.FLOW_ROW,
+                            children = {
+                                { type = "label", text = "Cells:", w = 80 },
+                                {
+                                    type = "numberEdit",
+                                    min = 1,
+                                    max = 12,
+                                    step = 1,
+                                    w = 70,
+                                    get = function() return wgt.debug.cells end,
+                                    set = function(v) wgt.debug.cells = v end,
+                                },
+                            },
+                        },
+                        {
+                            type = "box",
+                            flexFlow = lvgl.FLOW_ROW,
+                            children = {
+                                { type = "label", text = "%:", w = 80 },
+                                {
+                                    type = "numberEdit",
+                                    min = 0,
+                                    max = 100,
+                                    step = 1,
+                                    w = 70,
+                                    get = function() return wgt.debug.pcnt end,
+                                    set = function(v) wgt.debug.pcnt = v end,
+                                },
+                            },
+                        },
+                        {
+                            type = "box",
+                            flexFlow = lvgl.FLOW_ROW,
+                            children = {
+                                { type = "label", text = "mAh:", w = 80 },
+                                {
+                                    type = "numberEdit",
+                                    min = 0,
+                                    max = 10000,
+                                    step = 10,
+                                    w = 70,
+                                    get = function() return wgt.debug.mah end,
+                                    set = function(v) wgt.debug.mah = v end,
+                                },
+                            },
+                        },
+                        {
+                            type = "box",
+                            flexFlow = lvgl.FLOW_ROW,
+                            children = {
+                                { type = "label", text = "Armed:", w = 80 },
+                                {
+                                    type = "toggle",
+                                    get = function() return wgt.debug.arm end,
+                                    set = function(v) wgt.debug.arm = v end,
+                                },
+                            },
+                        },
+                        {
+                            type = "box",
+                            flexFlow = lvgl.FLOW_ROW,
+                            children = {
+                                { type = "label", text = "RSSI:", w = 80 },
+                                {
+                                    type = "numberEdit",
+                                    min = 0,
+                                    max = 100,
+                                    step = 1,
+                                    w = 70,
+                                    get = function() return wgt.debug.rssi end,
+                                    set = function(v) wgt.debug.rssi = v end,
+                                },
+                            },
+                        },
+                        {
+                            type = "box",
+                            flexFlow = lvgl.FLOW_ROW,
+                            children = {
+                                { type = "label", text = "RPM:", w = 80 },
+                                {
+                                    type = "numberEdit",
+                                    min = 0,
+                                    max = 50000,
+                                    step = 100,
+                                    w = 70,
+                                    get = function() return wgt.debug.rpm end,
+                                    set = function(v) wgt.debug.rpm = v end,
+                                },
+                            },
+                        },
+                        {
+                            type = "box",
+                            flexFlow = lvgl.FLOW_ROW,
+                            children = {
+                                { type = "label", text = "Gov:", w = 80 },
+                                {
+                                    type = "toggle",
+                                    get = function() return wgt.debug.gov end,
+                                    set = function(v) wgt.debug.gov = v end,
+                                },
+                            },
+                        },
+                        {
+                            type = "box",
+                            flexFlow = lvgl.FLOW_ROW,
+                            children = {
+                                { type = "label", text = "Rate:", w = 80 },
+                                {
+                                    type = "numberEdit",
+                                    min = 0,
+                                    max = 6,
+                                    step = 1,
+                                    w = 70,
+                                    get = function() return wgt.debug.rate end,
+                                    set = function(v) wgt.debug.rate = v end,
+                                },
+                            },
+                        },
+                        {
+                            type = "box",
+                            flexFlow = lvgl.FLOW_ROW,
+                            children = {
+                                { type = "label", text = "PID:", w = 80 },
+                                {
+                                    type = "numberEdit",
+                                    min = 0,
+                                    max = 6,
+                                    step = 1,
+                                    w = 70,
+                                    get = function() return wgt.debug.pid end,
+                                    set = function(v) wgt.debug.pid = v end,
+                                },
+                            },
+                        },
+                        {
+                            type = "box",
+                            flexFlow = lvgl.FLOW_ROW,
+                            children = {
+                                { type = "label", text = "Rescue:", w = 80 },
+                                {
+                                    type = "toggle",
+                                    get = function() return wgt.debug.resc end,
+                                    set = function(v) wgt.debug.resc = v end,
+                                },
+                            },
+                        },
+                    },
+                } or nil,
+
                 {
                     type = "button",
                     text = "Close",
@@ -96,19 +308,30 @@ end
 
 -- Draw and handle Menu button (replaces Settings button)
 local function drawAndHandleMenuButton(wgt, event, touchState, config, normalizeGridSpan)
-    -- Menu button positioned by BTN_GRID span
-    local span = normalizeGridSpan(config.BTN_GRID, { row = 8, rows = 1, col = 7, cols = 2 })
-    local cellW = math.floor(LCD_W / config.GRID_COLS)
-    local cellH = math.floor(LCD_H / config.GRID_ROWS)
+    -- Cache grid calculations to avoid recalculation every frame
+    if not wgt.cachedGridSpan then
+        wgt.cachedGridSpan = normalizeGridSpan(config.BTN_GRID, { row = 8, rows = 1, col = 7, cols = 2 })
+        wgt.cachedCellW = math.floor(LCD_W / config.GRID_COLS)
+        wgt.cachedCellH = math.floor(LCD_H / config.GRID_ROWS)
+    end
+
+    local span = wgt.cachedGridSpan
+    local cellW = wgt.cachedCellW
+    local cellH = wgt.cachedCellH
     local btnX = (span.col - 1) * cellW
     local btnY = (span.row - 1) * cellH
     local btnW = span.cols * cellW
     local btnH = span.rows * cellH
 
-    drawButton(btnX, btnY, btnW, btnH, "Menu")
-    if handleButton(event, touchState, btnX, btnY, btnW, btnH) then
+    -- Handle button interaction and draw button
+    local buttonPressed = handleButton(event, touchState, btnX, btnY, btnW, btnH)
+    if buttonPressed then
         openSettingsPage(wgt)
     end
+
+    drawButton(btnX, btnY, btnW, btnH, "Menu")
+
+    return buttonPressed -- Return true if interaction occurred
 end
 
 return {
