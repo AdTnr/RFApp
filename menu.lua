@@ -8,6 +8,25 @@
 #########################################################################
 ]]
 
+-- UI helper functions (extracted from simple_ui.lua)
+local function inRect(x, y, rx, ry, rw, rh)
+    return x >= rx and x <= rx + rw and y >= ry and y <= ry + rh
+end
+
+local function drawButton(x, y, w, h, title, focused)
+    lcd.drawFilledRectangle(x, y, w, h, COLOR_THEME_FOCUS)
+    lcd.drawRectangle(x, y, w, h, COLOR_THEME_FOCUS, 1)
+    lcd.drawText(x + w / 2, y + h / 2, title, BOLD + CENTER + VCENTER + COLOR_THEME_PRIMARY2)
+end
+
+local function handleButton(event, touchState, x, y, w, h)
+    if not touchState then return false end
+    if event == EVT_TOUCH_TAP and inRect(touchState.x, touchState.y, x, y, w, h) then
+        return true
+    end
+    return false
+end
+
 -- Tear down the LVGL settings page and reset state when leaving app mode or pressing back
 local function closeSettingsPage(wgt)
     if not (wgt and wgt.ui and wgt.ui.settingsOpen) then return end
@@ -76,7 +95,7 @@ local function openSettingsPage(wgt)
 end
 
 -- Draw and handle Menu button (replaces Settings button)
-local function drawAndHandleMenuButton(wgt, event, touchState, config, UI, normalizeGridSpan)
+local function drawAndHandleMenuButton(wgt, event, touchState, config, normalizeGridSpan)
     -- Menu button positioned by BTN_GRID span
     local span = normalizeGridSpan(config.BTN_GRID, { row = 8, rows = 1, col = 7, cols = 2 })
     local cellW = math.floor(LCD_W / config.GRID_COLS)
@@ -86,8 +105,8 @@ local function drawAndHandleMenuButton(wgt, event, touchState, config, UI, norma
     local btnW = span.cols * cellW
     local btnH = span.rows * cellH
 
-    UI.drawButton(btnX, btnY, btnW, btnH, "Menu")
-    if UI.handleButton(event, touchState, btnX, btnY, btnW, btnH) then
+    drawButton(btnX, btnY, btnW, btnH, "Menu")
+    if handleButton(event, touchState, btnX, btnY, btnW, btnH) then
         openSettingsPage(wgt)
     end
 end

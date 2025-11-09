@@ -13,13 +13,12 @@
 -- Brief: Entry point for RFApp – initializes shared telemetry, lays out apps via grid,
 -- draws widget placeholder in non-app mode, and handles audio/alerts in background.
 
-local APP_VERSION = "0.22"
+local APP_VERSION = "0.24"
 
 -- Load internal modules (copied from RFBattery subset)
 --Main modules
 local config = loadScript("/WIDGETS/RFApp/config.lua", "tcd")()
 local DisplayEngine = loadScript("/WIDGETS/RFApp/display_engine.lua", "tcd")()
-local UI = loadScript("/WIDGETS/RFApp/simple_ui.lua", "tcd")()
 local telemetry = loadScript("/WIDGETS/RFApp/telemetry.lua", "tcd")()
 local menu = loadScript("/WIDGETS/RFApp/menu.lua", "tcd")()
 
@@ -354,6 +353,11 @@ local function create(zone, options)
         rescueBg = COLOR_THEME_PRIMARY2,
         rescueFg = COLOR_THEME_PRIMARY1,
 
+        -- FPS counter
+        fpsLastTime = 0,
+        fpsFrameCount = 0,
+        fpsValue = 0,
+
         -- optional runtime debug overrides (set enabled=true and values as needed)
         -- debug = { enabled=true, volt=15.5, cells=4, pcnt=62, mah=500, arm=1, rssi=80 },
     }
@@ -415,6 +419,19 @@ local function refresh(wgt, event, touchState)
     if (wgt.options == nil) then return end
     if (wgt.zone == nil)    then return end
 
+    -- FPS counter calculation
+    local currentTime = getTime()
+    wgt.fpsFrameCount = wgt.fpsFrameCount + 1
+
+    if wgt.fpsLastTime == 0 then
+        wgt.fpsLastTime = currentTime
+    elseif currentTime - wgt.fpsLastTime >= 100 then -- Update every 100ms (10fps minimum)
+        local timeDiff = (currentTime - wgt.fpsLastTime) / 100 -- Convert to seconds
+        wgt.fpsValue = math.floor(wgt.fpsFrameCount / timeDiff + 0.5)
+        wgt.fpsFrameCount = 0
+        wgt.fpsLastTime = currentTime
+    end
+
     -- reset per-cycle audio flag so alerts can be processed once per UI refresh
     wgt.audioProcessedThisCycle = false
 
@@ -432,8 +449,8 @@ local function refresh(wgt, event, touchState)
 
     -- Full-screen mode only when zone actually spans the screen (avoid long-press events in widget mode)
     if appNow then
-        -- Always draw menu button (no actions wired behind it)
-        menu.drawAndHandleMenuButton(wgt, event, touchState, config, UI, normalizeGridSpan)
+
+        menu.drawAndHandleMenuButton(wgt, event, touchState, config, normalizeGridSpan)
         
         -- Always render apps first
         wgt.engine.render(wgt)
@@ -453,7 +470,12 @@ local function refresh(wgt, event, touchState)
             if wgt.ui and wgt.ui.eventsOpen then
                 eventsDisplay.drawFull(wgt)
                 return
-        end
+            end
+
+            -- FPS counter display (top-left corner)
+            if wgt.fpsValue > 0 then
+                lcd.drawText(2, 20, string.format("FPS: %d", wgt.fpsValue), SMLSIZE + COLOR_THEME_SECONDARY2)
+            end
         return
     end
 
