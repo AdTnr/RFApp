@@ -11,39 +11,26 @@
 ]]
 
 -- Changelog:
+-- 0.38: Enhanced PID/Rate audio logic - simultaneous changes play only profile sounds, no audio for zero values
+-- 0.37: Fixed missing audio file reference - commented out "battry.wav" which didn't exist
+-- 0.36: Renamed audio file "Battery_Connected_is_Low.wav" to "Batt_Conn_Low.wav" for EdgeTX filename length compatibility
+-- 0.35: CRITICAL FIX - Restored background() call in refresh() function, telemetry was completely broken
+-- 0.34: Added telemetry debugging output to diagnose sensor reading issues
+-- 0.33: Fixed telemetry update issue - moved telemetry.update() outside tick timing optimization for responsiveness
+-- 0.32: Restored detailed Arm state descriptions in event logs (Arm: ARMED (prearmed and now armed))
+-- 0.31: Restored detailed Gov state descriptions in event logs (Gov: SPOOLUP (Spooling to target))
+-- 0.30: Standardized stateMap pattern across Gov and Arm calc/display modules (matching Rescue pattern)
 -- 0.29: Added Debug Mode toggle with telemetry value overrides in settings menu
 -- 0.28: Moved telemetry hash calculation to telemetry.lua for cleaner main.lua
 -- 0.27: Fixed app widgets flashing - now render consistently
 -- 0.26: Fixed screen flashing issue with conditional rendering
 -- 0.25: Added telemetry change detection for optimization
 -- 0.24: Added FPS counter
--- 0.23: Added grid-based placement for app mode
--- 0.22: Added menu button
--- 0.21: Added event log
--- 0.20: Added rescue mode
--- 0.19: Added RPM display
--- 0.18: Added Governor display
--- 0.17: Added PID display
--- 0.16: Added signal display
--- 0.15: Added TxBatt display
--- 0.14: Added Events display
--- 0.13: Added Logo display
--- 0.12: Added Arm display
--- 0.11: Added BattTelem display
--- 0.10: Added Battery display
--- 0.09: Added Battery audio
--- 0.08: Added Battery calc
--- 0.07: Added Battery filters
--- 0.06: Added Battery display
--- 0.05: Added Battery audio
--- 0.04: Added Battery calc
--- 0.03: Added Battery filters
--- 0.02: Added Battery display
--- 0.01: Initial release
+
 -- Brief: Entry point for RFApp – initializes shared telemetry, lays out apps via grid,
 -- draws widget placeholder in non-app mode, and handles audio/alerts in background.
 
-local APP_VERSION = "0.29"
+local APP_VERSION = "0.38"
 
 -- Load internal modules (copied from RFBattery subset)
 --Main modules
@@ -85,9 +72,6 @@ local moduleRegistry = {
     },
     Pid = {
         display = "APPS/Pid/display.lua",
-    },
-    Rate = {
-        -- Rate audio moved to unified audio.lua
     },
     Audio = {
         profile = "APPS/Pid/audio.lua", -- Unified audio handling for Rate and PID (moved to Pid folder)
@@ -427,11 +411,13 @@ end
 local function background(wgt)
     if (wgt == nil) then return end
 
+    -- Always update telemetry regardless of tick timing (critical for responsiveness)
+    if telemetry.update then telemetry.update(wgt, config) end
+
     -- Safe module function calls with nil checks
     if wgt.tools and wgt.tools.detectResetEvent then
         wgt.tools.detectResetEvent(wgt, function(w) if calc.onTelemetryResetEvent then calc.onTelemetryResetEvent(w, config) end end)
     end
-    if telemetry.update then telemetry.update(wgt, config) end
     if calc.calculateBatteryData then calc.calculateBatteryData(wgt, config, filters, calc, nil) end
 
     -- update ARM state and play arm/disarm sounds on change
@@ -471,6 +457,9 @@ local function refresh(wgt, event, touchState)
 
     -- reset per-cycle audio flag so alerts can be processed once per UI refresh
     wgt.audioProcessedThisCycle = false
+
+    -- Update telemetry and process background tasks
+    background(wgt)
 
     local currentTelemetryHash = telemetry.calculateTelemetryHash(wgt.telem)
 

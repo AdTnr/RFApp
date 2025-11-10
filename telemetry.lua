@@ -9,6 +9,9 @@ function M.update(wgt, config)
     local t = wgt.telem
     if t == nil then t = {} end
 
+    -- Debug: Check if we're getting called
+    -- print("RFApp: telemetry.update() called")
+
     local dbg = config.Debug or {}
     local useDbg = (dbg.ENABLED == true) or (wgt.debug and wgt.debug.enabled == true)
 
@@ -36,6 +39,20 @@ function M.update(wgt, config)
         t.pid  = getValue(config.SENSOR_PID)
         t.rate = getValue(config.SENSOR_RATE)
         t.resc = getValue(config.SENSOR_RESC)
+
+        -- Debug output to check sensor values
+        -- if t.volt then
+        --     print(string.format("RFApp: V=%.2f, C=%s, RSSI=%s, ARM=%s", t.volt or 0, tostring(t.cells), tostring(t.rssi), tostring(t.arm)))
+        -- end
+
+        -- Debug: Check what sensors are available
+        -- local testSensors = {"Vbat", "Bat%", "Capa", "Cel#", "ARM", "Hspd", "Gov", "PID#", "RTE#", "Resc", "RxBt", "RSSI"}
+        -- for _, sensor in ipairs(testSensors) do
+        --     local val = getValue(sensor)
+        --     if val then
+        --         print(string.format("RFApp: Sensor %s = %s", sensor, tostring(val)))
+        --     end
+        -- end
     end
 
     wgt.telem = t

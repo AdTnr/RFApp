@@ -45,9 +45,9 @@ M.Sounds = {
     },
 
     Battery = {
-        insertedLow = audioFile("Battery_Connected_is_Low.wav"),
+        insertedLow = audioFile("Batt_Conn_Low.wav"),
         status = {
-            nominal = audioFile("battry.wav"),
+            -- nominal = audioFile("battry.wav"), -- File missing, commented out
             low = audioFile("Battery_Low.wav"),
             critical = audioFile("Battery_Critical.wav"),
         },

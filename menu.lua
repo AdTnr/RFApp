@@ -133,8 +133,8 @@ local function openSettingsPage(wgt)
                                 {
                                     type = "numberEdit",
                                     min = 0,
-                                    max = 50,
-                                    step = 0.1,
+                                    max = 55,
+                                    step = 0.5,
                                     w = 70,
                                     get = function() return wgt.debug.volt end,
                                     set = function(v) wgt.debug.volt = v end,
@@ -195,7 +195,11 @@ local function openSettingsPage(wgt)
                             children = {
                                 { type = "label", text = "Armed:", w = 80 },
                                 {
-                                    type = "toggle",
+                                    type = "numberEdit",
+                                    min = 0,
+                                    max = 4,
+                                    step = 1,
+                                    w = 70,
                                     get = function() return wgt.debug.arm end,
                                     set = function(v) wgt.debug.arm = v end,
                                 },
@@ -239,7 +243,11 @@ local function openSettingsPage(wgt)
                             children = {
                                 { type = "label", text = "Gov:", w = 80 },
                                 {
-                                    type = "toggle",
+                                    type = "numberEdit",
+                                    min = 0,
+                                    max = 9,
+                                    step = 1,
+                                    w = 70,
                                     get = function() return wgt.debug.gov end,
                                     set = function(v) wgt.debug.gov = v end,
                                 },
@@ -283,7 +291,11 @@ local function openSettingsPage(wgt)
                             children = {
                                 { type = "label", text = "Rescue:", w = 80 },
                                 {
-                                    type = "toggle",
+                                    type = "numberEdit",
+                                    min = 0,
+                                    max = 6,
+                                    step = 1,
+                                    w = 70,
                                     get = function() return wgt.debug.resc end,
                                     set = function(v) wgt.debug.resc = v end,
                                 },
