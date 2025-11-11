@@ -1,25 +1,11 @@
--- Unified audio handling for profile changes (Rate and PID telemetry sensors)
-
 local M = {}
 
 local playFile = playFile
-local getTime = getTime
 
 local function playSound(path)
     if path then
         playFile(path)
     end
-end
-
-local function normalizeValue(val)
-    if type(val) ~= "number" then return nil end
-    local v = math.floor(val + 0.5)
-    if v < 0 then
-        v = 0
-    elseif v > 6 then
-        v = 6
-    end
-    return v
 end
 
 local function isRateEnabled(wgt, config)
@@ -35,78 +21,54 @@ local function isRateEnabled(wgt, config)
     return true
 end
 
--- Check for simultaneous PID/Rate changes to the same value
-local function checkSimultaneousChange(wgt, telemField, currentVal, otherField)
-    if not wgt or not wgt.telem then return false end
-
-    local otherCurrentVal = normalizeValue(wgt.telem[otherField])
-    if otherCurrentVal == nil then return false end
-
-    -- Check if the other field also changed to the same value recently
-    local changeKey = telemField .. "_change_" .. currentVal
-    local otherChangeKey = otherField .. "_change_" .. currentVal
-
-    if wgt[otherChangeKey] and getTime() - wgt[otherChangeKey] <= 200 then -- 200ms window
-        -- Both changed to same value within time window
-        return true
-    end
-
-    -- Record this change
-    wgt[changeKey] = getTime()
-    return false
-end
-
--- Generic function to handle profile audio changes
-local function handleProfileAudio(wgt, config, telemField, lastValueField, soundConfig, announcementSound)
+local function handlePidAudioInternal(wgt, config)
     if not wgt or not wgt.telem then return end
 
-    -- Check if rate audio is enabled for rate changes
-    if telemField == "rate" and not isRateEnabled(wgt, config) then return end
-
-    local currentVal = normalizeValue(wgt.telem[telemField])
+    local currentVal = wgt.telem.pid
     if currentVal == nil then return end
 
-    -- Never play audio when changing to zero
-    if currentVal == 0 then
-        wgt[lastValueField] = currentVal
+    if wgt.pidAudioLastPid == nil then
+        wgt.pidAudioLastPid = currentVal
         return
     end
 
-    if wgt[lastValueField] == nil then
-        wgt[lastValueField] = currentVal
-        return
-    end
-
-    if currentVal ~= wgt[lastValueField] then
-        local profileSounds = config.Sounds and config.Sounds[soundConfig]
-
-        -- Check for simultaneous changes to same value
-        local otherField = (telemField == "rate") and "pid" or "rate"
-        local simultaneousChange = checkSimultaneousChange(wgt, telemField, currentVal, otherField)
-
-        if profileSounds then
-            -- If simultaneous change, only play the profile sound (no numbers)
-            if simultaneousChange then
-                playSound(profileSounds[announcementSound])
-            else
-                -- Normal behavior: play announcement + number
-                playSound(profileSounds[announcementSound])
-                if currentVal >= 1 and currentVal <= 6 then
-                    local numberSound = profileSounds.numbers and profileSounds.numbers[currentVal]
-                    playSound(numberSound)
-                end
-            end
+    if currentVal ~= wgt.pidAudioLastPid then
+        if currentVal >= 1 and currentVal <= 6 then
+            local combinedSound = config.AUDIO_PATH .. "Profile_" .. currentVal .. ".wav"
+            playSound(combinedSound)
         end
-        wgt[lastValueField] = currentVal
+        wgt.pidAudioLastPid = currentVal
+    end
+end
+
+local function handleRateAudioInternal(wgt, config)
+    if not wgt or not wgt.telem then return end
+
+    if not isRateEnabled(wgt, config) then return end
+
+    local currentVal = wgt.telem.rate
+    if currentVal == nil then return end
+
+    if wgt.rateAudioLastValue == nil then
+        wgt.rateAudioLastValue = currentVal
+        return
+    end
+
+    if currentVal ~= wgt.rateAudioLastValue then
+        if currentVal >= 1 and currentVal <= 6 then
+            local combinedSound = config.AUDIO_PATH .. "Rate_" .. currentVal .. ".wav"
+            playSound(combinedSound)
+        end
+        wgt.rateAudioLastValue = currentVal
     end
 end
 
 function M.handleRateAudio(wgt, config)
-    handleProfileAudio(wgt, config, "rate", "rateAudioLastValue", "Rate", "announcement")
+    handleRateAudioInternal(wgt, config)
 end
 
 function M.handlePidAudio(wgt, config)
-    handleProfileAudio(wgt, config, "pid", "pidAudioLastPid", "Pid", "profile")
+    handlePidAudioInternal(wgt, config)
 end
 
 return M

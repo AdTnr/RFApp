@@ -25,6 +25,7 @@ function M.update(wgt, config)
         t.rssi = (wgt.debug and wgt.debug.rssi) or dbg.RSSI or t.rssi
         t.rpm  = (wgt.debug and wgt.debug.rpm) or dbg.RPM or t.rpm
         t.gov  = (wgt.debug and wgt.debug.gov) or dbg.GOV or t.gov
+        t.pid  = (wgt.debug and wgt.debug.pid) or dbg.PID or t.pid
         t.rate = (wgt.debug and wgt.debug.rate) or dbg.RATE or t.rate
         t.resc = (wgt.debug and wgt.debug.resc) or dbg.RESC or t.resc
     else

@@ -11,9 +11,9 @@
 ]]
 
 -- Changelog:
--- 0.38: Enhanced PID/Rate audio logic - simultaneous changes play only profile sounds, no audio for zero values
--- 0.37: Fixed missing audio file reference - commented out "battry.wav" which didn't exist
--- 0.36: Renamed audio file "Battery_Connected_is_Low.wav" to "Batt_Conn_Low.wav" for EdgeTX filename length compatibility
+-- 0.42: Split PID and Rate audio into separate functions for independent control
+-- 0.41: Changed Rate audio to use combined Rate_X.wav files instead of separate rate + number sounds
+-- 0.40: Changed PID audio to use combined Profile_X.wav files instead of separate profile + number sounds
 -- 0.35: CRITICAL FIX - Restored background() call in refresh() function, telemetry was completely broken
 -- 0.34: Added telemetry debugging output to diagnose sensor reading issues
 -- 0.33: Fixed telemetry update issue - moved telemetry.update() outside tick timing optimization for responsiveness
@@ -30,7 +30,7 @@
 -- Brief: Entry point for RFApp – initializes shared telemetry, lays out apps via grid,
 -- draws widget placeholder in non-app mode, and handles audio/alerts in background.
 
-local APP_VERSION = "0.38"
+local APP_VERSION = "0.42"
 
 -- Load internal modules (copied from RFBattery subset)
 --Main modules
