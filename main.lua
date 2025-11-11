@@ -11,6 +11,7 @@
 ]]
 
 -- Changelog:
+-- 0.43: Added RF.png icon to settings menu page
 -- 0.42: Split PID and Rate audio into separate functions for independent control
 -- 0.41: Changed Rate audio to use combined Rate_X.wav files instead of separate rate + number sounds
 -- 0.40: Changed PID audio to use combined Profile_X.wav files instead of separate profile + number sounds
@@ -30,7 +31,7 @@
 -- Brief: Entry point for RFApp – initializes shared telemetry, lays out apps via grid,
 -- draws widget placeholder in non-app mode, and handles audio/alerts in background.
 
-local APP_VERSION = "0.42"
+local APP_VERSION = "0.43"
 
 -- Load internal modules (copied from RFBattery subset)
 --Main modules

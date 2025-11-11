@@ -66,6 +66,7 @@ local function openSettingsPage(wgt)
     local page = lvgl.page({
         title = "RFApp Settings",
         subtitle = "Debug & Control",
+        icon = "/WIDGETS/RFApp/rf2.png",
         back = function()
             closeSettingsPage(wgt)
         end,

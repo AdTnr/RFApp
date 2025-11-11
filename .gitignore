@@ -1,2 +1,3 @@
 .DS_Store
 *.luac
+convert_icon.sh

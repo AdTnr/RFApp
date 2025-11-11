@@ -63,7 +63,7 @@ function M.update(wgt, config)
             local desc = stateDesc[arm]
             if desc and desc ~= "" then
                 msg = msg .. string.format(" (%s)", desc)
-            end
+        end
             if events and events.append then
                 events.append(msg)
             end

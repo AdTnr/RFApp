@@ -43,7 +43,7 @@ end
 
 function M.update(wgt, config)
     if not wgt then return end
-
+    
     local gov = (wgt.telem and wgt.telem.gov)
     if gov == nil then
         gov = getValue(config.SENSOR_GOV)
@@ -66,10 +66,10 @@ function M.update(wgt, config)
     if wgt._lastGovState ~= gov then
         if entry ~= defaultState then
             local msg = string.format("Gov: %s", entry.label)
-            local desc = stateDesc[gov]
-            if desc and desc ~= "" then
+        local desc = stateDesc[gov]
+        if desc and desc ~= "" then
                 msg = msg .. string.format(" (%s)", desc)
-            end
+        end
             if events and events.append then
                 events.append(msg)
             end
