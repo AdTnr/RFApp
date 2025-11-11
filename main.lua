@@ -11,6 +11,9 @@
 ]]
 
 -- Changelog:
+-- 0.46: Optimized main loop - cached function references, reduced table lookups, cached FPS string
+-- 0.45: Added debouncing to PID and Rate telemetry to ignore intermediate values
+-- 0.44: Added Rate Audio toggle switch in settings menu
 -- 0.43: Added RF.png icon to settings menu page
 -- 0.42: Split PID and Rate audio into separate functions for independent control
 -- 0.41: Changed Rate audio to use combined Rate_X.wav files instead of separate rate + number sounds
@@ -31,7 +34,7 @@
 -- Brief: Entry point for RFApp – initializes shared telemetry, lays out apps via grid,
 -- draws widget placeholder in non-app mode, and handles audio/alerts in background.
 
-local APP_VERSION = "0.43"
+local APP_VERSION = "0.46"
 
 -- Load internal modules (copied from RFBattery subset)
 --Main modules
@@ -412,28 +415,45 @@ end
 local function background(wgt)
     if (wgt == nil) then return end
 
+    -- Cache function references to avoid repeated table lookups
+    local telemetryUpdate = telemetry.update
+    local calcBatteryData = calc.calculateBatteryData
+    local armCalcUpdate = armCalc.update
+    local armAudioHandle = armAudio.handleArmAudio
+    local rescueCalcUpdate = rescueCalc.update
+    local rescueAudioHandle = rescueAudio.handleRescueAudio
+    local battAudioHandle = battAudio.handleBatteryAlerts
+    local rpmCalcUpdate = rpmCalc.update
+    local govCalcUpdate = govCalc.update
+    local profileAudioHandlePid = profileAudio.handlePidAudio
+    local profileAudioHandleRate = profileAudio.handleRateAudio
+
     -- Always update telemetry regardless of tick timing (critical for responsiveness)
-    if telemetry.update then telemetry.update(wgt, config) end
+    if telemetryUpdate then telemetryUpdate(wgt, config) end
 
     -- Safe module function calls with nil checks
-    if wgt.tools and wgt.tools.detectResetEvent then
-        wgt.tools.detectResetEvent(wgt, function(w) if calc.onTelemetryResetEvent then calc.onTelemetryResetEvent(w, config) end end)
+    local tools = wgt.tools
+    if tools and tools.detectResetEvent then
+        tools.detectResetEvent(wgt, function(w) 
+            local onReset = calc.onTelemetryResetEvent
+            if onReset then onReset(w, config) end 
+        end)
     end
-    if calc.calculateBatteryData then calc.calculateBatteryData(wgt, config, filters, calc, nil) end
+    if calcBatteryData then calcBatteryData(wgt, config, filters, calc, nil) end
 
     -- update ARM state and play arm/disarm sounds on change
-    if armCalc.update then armCalc.update(wgt, config) end
-    if armAudio.handleArmAudio then armAudio.handleArmAudio(wgt, config) end
-    if rescueCalc.update then rescueCalc.update(wgt, config) end
-    if rescueAudio.handleRescueAudio then rescueAudio.handleRescueAudio(wgt, config) end
-    if battAudio.handleBatteryAlerts then battAudio.handleBatteryAlerts(wgt, config) end
+    if armCalcUpdate then armCalcUpdate(wgt, config) end
+    if armAudioHandle then armAudioHandle(wgt, config) end
+    if rescueCalcUpdate then rescueCalcUpdate(wgt, config) end
+    if rescueAudioHandle then rescueAudioHandle(wgt, config) end
+    if battAudioHandle then battAudioHandle(wgt, config) end
 
     -- update RPM from Hspd telemetry
-    if rpmCalc.update then rpmCalc.update(wgt, config) end
+    if rpmCalcUpdate then rpmCalcUpdate(wgt, config) end
     -- update Governor state from Gov telemetry
-    if govCalc.update then govCalc.update(wgt, config) end
-    if profileAudio.handlePidAudio then profileAudio.handlePidAudio(wgt, config) end
-    if profileAudio.handleRateAudio then profileAudio.handleRateAudio(wgt, config) end
+    if govCalcUpdate then govCalcUpdate(wgt, config) end
+    if profileAudioHandlePid then profileAudioHandlePid(wgt, config) end
+    if profileAudioHandleRate then profileAudioHandleRate(wgt, config) end
     -- Log app removed: no log cache updates
 end
 
@@ -443,17 +463,22 @@ local function refresh(wgt, event, touchState)
     if (wgt.options == nil) then return end
     if (wgt.zone == nil)    then return end
 
-    -- FPS counter calculation
+    -- Cache frequently accessed values
     local currentTime = getTime()
-    wgt.fpsFrameCount = wgt.fpsFrameCount + 1
+    local fpsLastTime = wgt.fpsLastTime
+    local fpsFrameCount = wgt.fpsFrameCount + 1
+    wgt.fpsFrameCount = fpsFrameCount
 
-    if wgt.fpsLastTime == 0 then
+    -- FPS counter calculation (optimized)
+    if fpsLastTime == 0 then
         wgt.fpsLastTime = currentTime
-    elseif currentTime - wgt.fpsLastTime >= 100 then -- Update every 100ms (10fps minimum)
-        local timeDiff = (currentTime - wgt.fpsLastTime) / 100 -- Convert to seconds
-        wgt.fpsValue = math.floor(wgt.fpsFrameCount / timeDiff + 0.5)
+    elseif currentTime - fpsLastTime >= 100 then -- Update every 100ms (10fps minimum)
+        local timeDiff = (currentTime - fpsLastTime) / 100 -- Convert to seconds
+        wgt.fpsValue = math.floor(fpsFrameCount / timeDiff + 0.5)
         wgt.fpsFrameCount = 0
         wgt.fpsLastTime = currentTime
+        -- Cache FPS string to avoid formatting every frame
+        wgt._fpsString = "FPS: " .. wgt.fpsValue
     end
 
     -- reset per-cycle audio flag so alerts can be processed once per UI refresh
@@ -462,25 +487,41 @@ local function refresh(wgt, event, touchState)
     -- Update telemetry and process background tasks
     background(wgt)
 
-    local currentTelemetryHash = telemetry.calculateTelemetryHash(wgt.telem)
+    -- Cache function references
+    local calculateTelemetryHash = telemetry.calculateTelemetryHash
+    local currentTelemetryHash = calculateTelemetryHash and calculateTelemetryHash(wgt.telem) or 0
 
-    if lvgl and lvgl.isFullScreen and lvgl.isFullScreen() and wgt.ui and wgt.ui.settingsOpen then
+    -- Cache lvgl checks
+    local lvglIsFullScreen = lvgl and lvgl.isFullScreen
+    local isFullScreen = lvglIsFullScreen and lvglIsFullScreen()
+    local wgtUi = wgt.ui
+    
+    if isFullScreen and wgtUi and wgtUi.settingsOpen then
         return
     end
+    
     -- Detect app mode transition to refresh cached state
     local appNow = isAppMode(wgt, event)
-    if appNow and not wgt._appModeActive then
+    local appModeActive = wgt._appModeActive
+    
+    if appNow and not appModeActive then
         update(wgt, wgt.options)
         wgt._appModeActive = true
-    elseif (not appNow) and wgt._appModeActive then
+    elseif (not appNow) and appModeActive then
         wgt._appModeActive = false
     end
 
     -- Full-screen mode only when zone actually spans the screen (avoid long-press events in widget mode)
     if appNow then
+        -- Cache function references
+        local menuDrawAndHandle = menu.drawAndHandleMenuButton
+        local engineRender = wgt.engine.render
+        local eventsDisplayDrawFull = eventsDisplay.drawFull
 
         -- Always render menu button and apps for consistent display
-        menu.drawAndHandleMenuButton(wgt, event, touchState, config, normalizeGridSpan)
+        if menuDrawAndHandle then
+            menuDrawAndHandle(wgt, event, touchState, config, normalizeGridSpan)
+        end
 
         -- Track telemetry changes for optimization (but always render for visual consistency)
         if currentTelemetryHash ~= wgt.lastTelemetryHash then
@@ -489,28 +530,34 @@ local function refresh(wgt, event, touchState)
         end
 
         -- Always render apps to prevent flashing
-        wgt.engine.render(wgt)
+        if engineRender then engineRender(wgt) end
 
-        -- FPS counter display (top-left corner)
-        if wgt.fpsValue > 0 then
-            lcd.drawText(2, 20, string.format("FPS: %d", wgt.fpsValue), SMLSIZE + COLOR_THEME_SECONDARY2)
+        -- FPS counter display (top-left corner) - use cached string
+        local fpsValue = wgt.fpsValue
+        if fpsValue > 0 then
+            local fpsString = wgt._fpsString or ("FPS: " .. fpsValue)
+            lcd.drawText(2, 20, fpsString, SMLSIZE + COLOR_THEME_SECONDARY2)
         end
 
         -- Events fullscreen toggle (always handle interactions)
         if touchState and event == EVT_TOUCH_TAP then
-            if wgt.ui and wgt.ui.eventsOpen then
-                wgt.ui.eventsOpen = false
-            elseif wgt._eventsRect then
-                local r = wgt._eventsRect
-                if touchState.x >= r.x and touchState.x <= r.x + r.w and touchState.y >= r.y and touchState.y <= r.y + r.h then
-                if not wgt.ui then wgt.ui = {} end
-                    wgt.ui.eventsOpen = true
+            if wgtUi and wgtUi.eventsOpen then
+                wgtUi.eventsOpen = false
+            else
+                local eventsRect = wgt._eventsRect
+                if eventsRect then
+                    local r = eventsRect
+                    if touchState.x >= r.x and touchState.x <= r.x + r.w and 
+                       touchState.y >= r.y and touchState.y <= r.y + r.h then
+                        if not wgtUi then wgt.ui = {}; wgtUi = wgt.ui end
+                        wgtUi.eventsOpen = true
+                    end
                 end
             end
         end
 
-        if wgt.ui and wgt.ui.eventsOpen then
-            eventsDisplay.drawFull(wgt)
+        if wgtUi and wgtUi.eventsOpen then
+            if eventsDisplayDrawFull then eventsDisplayDrawFull(wgt) end
             return
         end
         return

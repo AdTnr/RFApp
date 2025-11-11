@@ -58,6 +58,11 @@ local function openSettingsPage(wgt)
         }
     end
 
+    -- Initialize rate audio enabled setting (default to true)
+    if wgt.rateAudioEnabled == nil then
+        wgt.rateAudioEnabled = true
+    end
+
     wgt.ui.settingsValue = wgt.ui.settingsValue or 0
     wgt.ui.settingsOpen = true
 
@@ -92,6 +97,22 @@ local function openSettingsPage(wgt)
                                 wgt.debug.enabled = (v ~= 0)
                                 -- Force page rebuild to show/hide debug fields
                                 openSettingsPage(wgt)
+                            end,
+                        },
+                    },
+                },
+
+                -- Rate Audio Toggle
+                {
+                    type = "box",
+                    flexFlow = lvgl.FLOW_ROW,
+                    children = {
+                        { type = "label", text = "Rate Audio:", font = BOLD, w = 120 },
+                        {
+                            type = "toggle",
+                            get = function() return wgt.rateAudioEnabled and 1 or 0 end,
+                            set = function(v)
+                                wgt.rateAudioEnabled = (v ~= 0)
                             end,
                         },
                     },

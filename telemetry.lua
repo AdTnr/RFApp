@@ -4,6 +4,59 @@ local M = {}
 
 local getValue = getValue
 local getRSSI = getRSSI
+local getTime = getTime
+
+-- Debounce function for PID and Rate telemetry values
+-- Ignores intermediate values when switching (e.g., 1 -> 2 -> 3 becomes 1 -> 3)
+local function debounceValue(wgt, fieldName, rawValue, debounceMs)
+    debounceMs = debounceMs or 20
+    
+    -- Initialize debounce state if needed
+    if not wgt.telemDebounce then
+        wgt.telemDebounce = {}
+    end
+    
+    local debounce = wgt.telemDebounce[fieldName]
+    if not debounce then
+        debounce = {
+            pendingValue = nil,
+            pendingTime = 0,
+            lastStableValue = nil
+        }
+        wgt.telemDebounce[fieldName] = debounce
+    end
+    
+    local currentTime = getTime()
+    
+    -- If no stable value yet and we have a value, set it immediately (first time)
+    if debounce.lastStableValue == nil and rawValue ~= nil then
+        debounce.lastStableValue = rawValue
+        return rawValue
+    end
+    
+    -- If value changed, start/restart debounce timer
+    if rawValue ~= debounce.pendingValue then
+        debounce.pendingValue = rawValue
+        debounce.pendingTime = currentTime
+        return debounce.lastStableValue -- Return last stable value while debouncing
+    end
+    
+    -- If value is stable and debounce time has passed, update stable value
+    if debounce.pendingValue ~= nil then
+        local elapsed = currentTime - debounce.pendingTime
+        if elapsed >= debounceMs then
+            debounce.lastStableValue = debounce.pendingValue
+            debounce.pendingValue = nil
+            return debounce.lastStableValue
+        else
+            -- Still debouncing, return last stable value
+            return debounce.lastStableValue
+        end
+    end
+    
+    -- No pending value, return current stable value
+    return debounce.lastStableValue
+end
 
 function M.update(wgt, config)
     local t = wgt.telem
@@ -37,8 +90,14 @@ function M.update(wgt, config)
         t.rssi = getRSSI()
         t.rpm  = getValue(config.SENSOR_RPM)
         t.gov  = getValue(config.SENSOR_GOV)
-        t.pid  = getValue(config.SENSOR_PID)
-        t.rate = getValue(config.SENSOR_RATE)
+        
+        -- Apply debouncing to PID and Rate telemetry
+        local rawPid = getValue(config.SENSOR_PID)
+        local rawRate = getValue(config.SENSOR_RATE)
+        
+        t.pid = debounceValue(wgt, "pid", rawPid, 50)
+        t.rate = debounceValue(wgt, "rate", rawRate, 50)
+        
         t.resc = getValue(config.SENSOR_RESC)
 
         -- Debug output to check sensor values
@@ -61,22 +120,35 @@ function M.update(wgt, config)
 end
 
 -- Calculate hash of telemetry values for change detection optimization
+-- Optimized: avoids unnecessary math.floor for integer values, caches local variable
 function M.calculateTelemetryHash(telem)
     if not telem then return 0 end
     -- Hash key telemetry values that affect display
     local hash = 0
-    if telem.volt then hash = hash + math.floor(telem.volt * 100) end
-    if telem.current then hash = hash + math.floor(telem.current * 100) end
-    if telem.mah then hash = hash + telem.mah end
-    if telem.percent then hash = hash + telem.percent end
-    if telem.cells then hash = hash + telem.cells end
-    if telem.rssi then hash = hash + telem.rssi end
-    if telem.pid then hash = hash + telem.pid end
-    if telem.rate then hash = hash + telem.rate end
-    if telem.arm then hash = hash + telem.arm end
-    if telem.rescue then hash = hash + telem.rescue end
-    if telem.rpm then hash = hash + telem.rpm end
-    if telem.gov then hash = hash + telem.gov end
+    local v = telem.volt
+    if v then hash = hash + (v * 100) end
+    v = telem.current
+    if v then hash = hash + (v * 100) end
+    v = telem.mah
+    if v then hash = hash + v end
+    v = telem.percent
+    if v then hash = hash + v end
+    v = telem.cells
+    if v then hash = hash + v end
+    v = telem.rssi
+    if v then hash = hash + v end
+    v = telem.pid
+    if v then hash = hash + v end
+    v = telem.rate
+    if v then hash = hash + v end
+    v = telem.arm
+    if v then hash = hash + v end
+    v = telem.rescue
+    if v then hash = hash + v end
+    v = telem.rpm
+    if v then hash = hash + v end
+    v = telem.gov
+    if v then hash = hash + v end
     return hash
 end
 
