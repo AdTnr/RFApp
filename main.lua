@@ -11,6 +11,7 @@
 ]]
 
 -- Changelog:
+-- 0.47: Added FPS Counter toggle switch in settings menu to enable/disable FPS calculations
 -- 0.46: Optimized main loop - cached function references, reduced table lookups, cached FPS string
 -- 0.45: Added debouncing to PID and Rate telemetry to ignore intermediate values
 -- 0.44: Added Rate Audio toggle switch in settings menu
@@ -34,7 +35,7 @@
 -- Brief: Entry point for RFApp – initializes shared telemetry, lays out apps via grid,
 -- draws widget placeholder in non-app mode, and handles audio/alerts in background.
 
-local APP_VERSION = "0.46"
+local APP_VERSION = "0.47"
 
 -- Load internal modules (copied from RFBattery subset)
 --Main modules
@@ -372,6 +373,7 @@ local function create(zone, options)
         rescueFg = COLOR_THEME_PRIMARY1,
 
         -- FPS counter
+        fpsEnabled = false,
         fpsLastTime = 0,
         fpsFrameCount = 0,
         fpsValue = 0,
@@ -465,20 +467,23 @@ local function refresh(wgt, event, touchState)
 
     -- Cache frequently accessed values
     local currentTime = getTime()
-    local fpsLastTime = wgt.fpsLastTime
-    local fpsFrameCount = wgt.fpsFrameCount + 1
-    wgt.fpsFrameCount = fpsFrameCount
+    
+    -- FPS counter calculation (only if enabled)
+    if wgt.fpsEnabled then
+        local fpsLastTime = wgt.fpsLastTime
+        local fpsFrameCount = wgt.fpsFrameCount + 1
+        wgt.fpsFrameCount = fpsFrameCount
 
-    -- FPS counter calculation (optimized)
-    if fpsLastTime == 0 then
-        wgt.fpsLastTime = currentTime
-    elseif currentTime - fpsLastTime >= 100 then -- Update every 100ms (10fps minimum)
-        local timeDiff = (currentTime - fpsLastTime) / 100 -- Convert to seconds
-        wgt.fpsValue = math.floor(fpsFrameCount / timeDiff + 0.5)
-        wgt.fpsFrameCount = 0
-        wgt.fpsLastTime = currentTime
-        -- Cache FPS string to avoid formatting every frame
-        wgt._fpsString = "FPS: " .. wgt.fpsValue
+        if fpsLastTime == 0 then
+            wgt.fpsLastTime = currentTime
+        elseif currentTime - fpsLastTime >= 100 then -- Update every 100ms (10fps minimum)
+            local timeDiff = (currentTime - fpsLastTime) / 100 -- Convert to seconds
+            wgt.fpsValue = math.floor(fpsFrameCount / timeDiff + 0.5)
+            wgt.fpsFrameCount = 0
+            wgt.fpsLastTime = currentTime
+            -- Cache FPS string to avoid formatting every frame
+            wgt._fpsString = "FPS: " .. wgt.fpsValue
+        end
     end
 
     -- reset per-cycle audio flag so alerts can be processed once per UI refresh
@@ -532,11 +537,13 @@ local function refresh(wgt, event, touchState)
         -- Always render apps to prevent flashing
         if engineRender then engineRender(wgt) end
 
-        -- FPS counter display (top-left corner) - use cached string
-        local fpsValue = wgt.fpsValue
-        if fpsValue > 0 then
-            local fpsString = wgt._fpsString or ("FPS: " .. fpsValue)
-            lcd.drawText(2, 20, fpsString, SMLSIZE + COLOR_THEME_SECONDARY2)
+        -- FPS counter display (top-left corner) - only if enabled
+        if wgt.fpsEnabled then
+            local fpsValue = wgt.fpsValue
+            if fpsValue > 0 then
+                local fpsString = wgt._fpsString or ("FPS: " .. fpsValue)
+                lcd.drawText(2, 20, fpsString, SMLSIZE + COLOR_THEME_SECONDARY2)
+            end
         end
 
         -- Events fullscreen toggle (always handle interactions)
