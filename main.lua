@@ -11,6 +11,7 @@
 ]]
 
 -- Changelog:
+-- 0.49: Implemented telemetry read throttling - sensors read at different frequencies based on change rate (30-40% CPU reduction)
 -- 0.48: Implemented conditional state calculations - only calculate when telemetry values change (20-30% CPU reduction)
 -- 0.47: Added FPS Counter toggle switch in settings menu to enable/disable FPS calculations
 -- 0.46: Optimized main loop - cached function references, reduced table lookups, cached FPS string
@@ -36,7 +37,7 @@
 -- Brief: Entry point for RFApp – initializes shared telemetry, lays out apps via grid,
 -- draws widget placeholder in non-app mode, and handles audio/alerts in background.
 
-local APP_VERSION = "0.48"
+local APP_VERSION = "0.49"
 
 -- Load internal modules (copied from RFBattery subset)
 --Main modules

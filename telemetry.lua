@@ -6,6 +6,9 @@ local getValue = getValue
 local getRSSI = getRSSI
 local getTime = getTime
 
+-- Frame counter for telemetry read throttling
+local frameCounter = 0
+
 -- Debounce function for PID and Rate telemetry values
 -- Ignores intermediate values when switching (e.g., 1 -> 2 -> 3 becomes 1 -> 3)
 local function debounceValue(wgt, fieldName, rawValue, debounceMs)
@@ -62,6 +65,9 @@ function M.update(wgt, config)
     local t = wgt.telem
     if t == nil then t = {} end
 
+    -- Increment frame counter for read throttling
+    frameCounter = frameCounter + 1
+
     -- Debug: Check if we're getting called
     -- print("RFApp: telemetry.update() called")
 
@@ -82,23 +88,33 @@ function M.update(wgt, config)
         t.rate = (wgt.debug and wgt.debug.rate) or dbg.RATE or t.rate
         t.resc = (wgt.debug and wgt.debug.resc) or dbg.RESC or t.resc
     else
-        t.volt = getValue(config.SENSOR_VOLT)
-        t.cells = getValue(config.SENSOR_CELLS)
-        t.pcnt = getValue(config.SENSOR_PCNT)
-        t.mah  = getValue(config.SENSOR_MAH)
-        t.arm  = getValue(config.SENSOR_ARM)
-        t.rssi = getRSSI()
-        t.rpm  = getValue(config.SENSOR_RPM)
-        t.gov  = getValue(config.SENSOR_GOV)
+        -- Fast-changing sensors: Read every frame (arm, pid, rate, resc)
+        t.arm = getValue(config.SENSOR_ARM)
         
-        -- Apply debouncing to PID and Rate telemetry
+        -- Apply debouncing to PID and Rate telemetry (fast sensors)
         local rawPid = getValue(config.SENSOR_PID)
         local rawRate = getValue(config.SENSOR_RATE)
-        
         t.pid = debounceValue(wgt, "pid", rawPid, 50)
         t.rate = debounceValue(wgt, "rate", rawRate, 50)
         
         t.resc = getValue(config.SENSOR_RESC)
+        
+        -- Medium-changing sensors: Read every 2 frames (rssi, rpm, gov)
+        -- Read on first frame or every 2 frames thereafter
+        if frameCounter == 1 or frameCounter % 2 == 0 then
+            t.rssi = getRSSI()
+            t.rpm = getValue(config.SENSOR_RPM)
+            t.gov = getValue(config.SENSOR_GOV)
+        end
+        
+        -- Slow-changing sensors: Read every 5 frames (volt, cells, pcnt, mah)
+        -- Read on first frame or every 5 frames thereafter
+        if frameCounter == 1 or frameCounter % 5 == 0 then
+            t.volt = getValue(config.SENSOR_VOLT)
+            t.cells = getValue(config.SENSOR_CELLS)
+            t.pcnt = getValue(config.SENSOR_PCNT)
+            t.mah = getValue(config.SENSOR_MAH)
+        end
 
         -- Debug output to check sensor values
         -- if t.volt then
