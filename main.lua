@@ -11,6 +11,7 @@
 ]]
 
 -- Changelog:
+-- 0.53: Added RPM min/max tracking (only updates when governor is ACTIVE), added flashing background to Arm display when armed
 -- 0.52: Removed dirty flag system - provided no optimization since EdgeTX clears screen every frame (must render always)
 -- 0.51: Fixed dirty flag rendering - always render to prevent blank screen (EdgeTX clears screen every frame)
 -- 0.50: Implemented dirty flag rendering - only render apps when their telemetry values change (15-25% CPU reduction)
@@ -40,7 +41,7 @@
 -- Brief: Entry point for RFApp – initializes shared telemetry, lays out apps via grid,
 -- draws widget placeholder in non-app mode, and handles audio/alerts in background.
 
-local APP_VERSION = "0.52"
+local APP_VERSION = "0.53"
 
 -- Load internal modules (copied from RFBattery subset)
 --Main modules

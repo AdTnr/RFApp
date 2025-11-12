@@ -7,12 +7,12 @@ local events = loadScript("/WIDGETS/RFApp/APPS/Events/store.lua", "tcd")()
 local getValue = getValue
 
 local stateMap = {
-    [0] = { label = "SAFE",    name = "SAFE_NEVER_ARMED",   bg = COLOR_THEME_SECONDARY1, fg = COLOR_THEME_PRIMARY2 },
-    [1] = { label = "ARMED",   name = "ARMED",              bg = RED,                    fg = COLOR_THEME_PRIMARY1 },
-    [2] = { label = "SAFE",    name = "SAFE_WAS_ARMED",     bg = COLOR_THEME_SECONDARY1, fg = COLOR_THEME_PRIMARY2 },
-    [3] = { label = "ARMED",   name = "ARMED_WAS_ARMED",    bg = RED,                    fg = COLOR_THEME_PRIMARY1 },
-    [4] = { label = "SAFE",    name = "SAFE_PREARMED",      bg = ORANGE,                 fg = COLOR_THEME_PRIMARY1 },
-    [5] = { label = "ARMED",   name = "ARMED_PREARMED",     bg = RED,                    fg = COLOR_THEME_PRIMARY1 },
+    [0] = { label = "SAFE",    name = "SAFE_NEVER_ARMED",   bg = GREEN,                 fg = BLACK },
+    [1] = { label = "ARMED",   name = "ARMED",              bg = RED,                   fg = WHITE },
+    [2] = { label = "SAFE",    name = "SAFE_WAS_ARMED",     bg = GREEN,                 fg = GREEN },
+    [3] = { label = "ARMED",   name = "ARMED_WAS_ARMED",    bg = RED,                   fg = WHITE },
+    [4] = { label = "SAFE",    name = "SAFE_PREARMED",      bg = GREEN,                 fg = GREEN },
+    [5] = { label = "ARMED",   name = "ARMED_PREARMED",     bg = RED,                   fg = WHITE },
 }
 
 -- State descriptions for event logs (brief versions of state meanings)
@@ -41,9 +41,8 @@ function M.update(wgt, config)
 
     if type(arm) ~= "number" then
         arm = -1
-    else
-        arm = math.floor(arm + 0.5)
     end
+    -- Arm values are always integers, no rounding needed
 
     local entry = resolveState(arm)
 
