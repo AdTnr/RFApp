@@ -54,7 +54,7 @@ M.Sounds = {
     },
 }
 
-M.RATE_AUDIO_DEFAULT = true
+M.RATE_AUDIO_DEFAULT = false
 M.HARDWIRED_RESERVE_PERCENT = 30
 M.HARDWIRED_TEXT_COLOR_TOGGLE = 0
 
@@ -145,7 +145,7 @@ M.Apps = {
     },
 
     BattTelem = {
-        enabled = true,
+        enabled = false,
         GRID = { row = 3, rows = 3, col = 7, cols = 2 },
     },
     Arm = {
@@ -166,7 +166,7 @@ M.Apps = {
     },
     Rpm = {
         enabled = true,
-        GRID = { row = 3, rows = 2, col = 1, cols = 2 },
+        GRID = { row = 2, rows = 2, col = 3, cols = 4 },
     },
     Gov = {
         enabled = true,

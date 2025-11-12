@@ -121,6 +121,9 @@ function M.new()
 
     function engine.render(wgt)
         if engine.sortedDirty then sortWidgets() end
+        
+        -- CRITICAL: EdgeTX clears screen every frame, so we must render every frame
+        -- Render all widgets (no conditional rendering since screen is cleared)
         for _, item in ipairs(engine.widgets) do
             local rect
             if item.grid then

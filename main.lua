@@ -11,6 +11,9 @@
 ]]
 
 -- Changelog:
+-- 0.52: Removed dirty flag system - provided no optimization since EdgeTX clears screen every frame (must render always)
+-- 0.51: Fixed dirty flag rendering - always render to prevent blank screen (EdgeTX clears screen every frame)
+-- 0.50: Implemented dirty flag rendering - only render apps when their telemetry values change (15-25% CPU reduction)
 -- 0.49: Implemented telemetry read throttling - sensors read at different frequencies based on change rate (30-40% CPU reduction)
 -- 0.48: Implemented conditional state calculations - only calculate when telemetry values change (20-30% CPU reduction)
 -- 0.47: Added FPS Counter toggle switch in settings menu to enable/disable FPS calculations
@@ -37,7 +40,7 @@
 -- Brief: Entry point for RFApp – initializes shared telemetry, lays out apps via grid,
 -- draws widget placeholder in non-app mode, and handles audio/alerts in background.
 
-local APP_VERSION = "0.49"
+local APP_VERSION = "0.52"
 
 -- Load internal modules (copied from RFBattery subset)
 --Main modules
@@ -391,6 +394,11 @@ local function create(zone, options)
         _lastRpmValue = nil,
         _lastBatteryHash = nil,
 
+        -- RPM min/max tracking (initialized in Rpm/calc.lua)
+        rpmMin = nil,
+        rpmMax = nil,
+
+
         -- Cached grid calculations
         cachedGridSpan = nil,
 
@@ -468,11 +476,14 @@ local function background(wgt)
         wgt._lastArmValue = armValue
     end
 
-    -- Governor state - only calculate if gov value changed
+    -- Governor state - always calculate (RPM needs govValue every frame for min/max tracking)
     local govValue = telem.gov
     if govValue ~= (wgt._lastGovValue or -999) then
         if govCalcUpdate then govCalcUpdate(wgt, config) end
         wgt._lastGovValue = govValue
+    elseif wgt.govValue == nil then
+        -- Ensure govValue is initialized on first run (for RPM min/max tracking)
+        if govCalcUpdate then govCalcUpdate(wgt, config) end
     end
 
     -- Rescue state - only calculate if rescue value changed
@@ -483,11 +494,22 @@ local function background(wgt)
         wgt._lastRescueValue = rescueValue
     end
 
-    -- RPM state - only calculate if rpm value changed
+    -- RPM state - always calculate (needs to check governor state every frame for min/max)
     local rpmValue = telem.rpm
+    if rpmCalcUpdate then rpmCalcUpdate(wgt, config) end
     if rpmValue ~= (wgt._lastRpmValue or -999) then
-        if rpmCalcUpdate then rpmCalcUpdate(wgt, config) end
         wgt._lastRpmValue = rpmValue
+    end
+
+    -- PID/Rate state - check if values changed
+    if telem.pid ~= (wgt._lastPidValue or -999) or telem.rate ~= (wgt._lastRateValue or -999) then
+        wgt._lastPidValue = telem.pid
+        wgt._lastRateValue = telem.rate
+    end
+
+    -- Signal/RSSI - check if changed (read every 2 frames, so check if different)
+    if telem.rssi ~= (wgt._lastRssiValue or -999) then
+        wgt._lastRssiValue = telem.rssi
     end
 
     -- Profile audio (PID and Rate) - always check (they handle their own change detection)
@@ -565,13 +587,13 @@ local function refresh(wgt, event, touchState)
             menuDrawAndHandle(wgt, event, touchState, config, normalizeGridSpan)
         end
 
-        -- Track telemetry changes for optimization (but always render for visual consistency)
+        -- Track telemetry changes for optimization
         if currentTelemetryHash ~= wgt.lastTelemetryHash then
             wgt.lastTelemetryHash = currentTelemetryHash
-            -- Telemetry changed - full render will show updates
+            -- Telemetry changed - dirty flags set in background() will trigger renders
         end
 
-        -- Always render apps to prevent flashing
+        -- Render apps (only dirty apps will render due to dirty flag system)
         if engineRender then engineRender(wgt) end
 
         -- FPS counter display (top-left corner) - only if enabled

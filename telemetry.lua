@@ -116,19 +116,7 @@ function M.update(wgt, config)
             t.mah = getValue(config.SENSOR_MAH)
         end
 
-        -- Debug output to check sensor values
-        -- if t.volt then
-        --     print(string.format("RFApp: V=%.2f, C=%s, RSSI=%s, ARM=%s", t.volt or 0, tostring(t.cells), tostring(t.rssi), tostring(t.arm)))
-        -- end
 
-        -- Debug: Check what sensors are available
-        -- local testSensors = {"Vbat", "Bat%", "Capa", "Cel#", "ARM", "Hspd", "Gov", "PID#", "RTE#", "Resc", "RxBt", "RSSI"}
-        -- for _, sensor in ipairs(testSensors) do
-        --     local val = getValue(sensor)
-        --     if val then
-        --         print(string.format("RFApp: Sensor %s = %s", sensor, tostring(val)))
-        --     end
-        -- end
     end
 
     wgt.telem = t
