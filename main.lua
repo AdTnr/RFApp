@@ -11,6 +11,7 @@
 ]]
 
 -- Changelog:
+-- 0.56: Refactored - extracted helper functions (isAppMode, loadRFLogo, normalizeGridSpan, drawWidgetPlaceholder) to helpers.lua
 -- 0.53: Added RPM min/max tracking (only updates when governor is ACTIVE), added flashing background to Arm display when armed
 -- 0.52: Removed dirty flag system - provided no optimization since EdgeTX clears screen every frame (must render always)
 -- 0.51: Fixed dirty flag rendering - always render to prevent blank screen (EdgeTX clears screen every frame)
@@ -41,7 +42,7 @@
 -- Brief: Entry point for RFApp – initializes shared telemetry, lays out apps via grid,
 -- draws widget placeholder in non-app mode, and handles audio/alerts in background.
 
-local APP_VERSION = "0.53"
+local APP_VERSION = "0.56"
 
 -- Load internal modules (copied from RFBattery subset)
 --Main modules
@@ -49,6 +50,7 @@ local config = loadScript("/WIDGETS/RFApp/config.lua", "tcd")()
 local DisplayEngine = loadScript("/WIDGETS/RFApp/display_engine.lua", "tcd")()
 local telemetry = loadScript("/WIDGETS/RFApp/telemetry.lua", "tcd")()
 local menu = loadScript("/WIDGETS/RFApp/menu.lua", "tcd")()
+local helpers = loadScript("/WIDGETS/RFApp/helpers.lua", "tcd")()
 
 -- Module registry for dynamic app loading
 -- Maps app names to their module file paths. Apps can be enabled/disabled via config.Apps[appName].enabled
@@ -181,66 +183,6 @@ end
 
 -- Update options and color settings
 local update
-local function isAppMode(wgt, event)
-    return (event ~= nil) and (wgt.zone and wgt.zone.w >= LCD_W - 1) and (wgt.zone.h >= LCD_H - 20) and (wgt.zone.x == 0) and (wgt.zone.y == 0)
-end
-
-local function loadRFLogo()
-    if Bitmap and Bitmap.open then
-        return Bitmap.open("/WIDGETS/RFApp/RF.png")
-    end
-    return nil
-end
-
-local function normalizeGridSpan(span, defaultSpan)
-    local src = span or defaultSpan or {}
-
-    local row = src.row or src.r or src.r1 or src[1] or 1
-    local col = src.col or src.c or src.c1 or src[3] or 1
-
-    local rows = src.rows or src.rowSpan
-    if not rows then
-        local r2 = src.r2 or src[2] or row
-        rows = (r2 - row + 1)
-    end
-
-    local cols = src.cols or src.colSpan
-    if not cols then
-        local c2 = src.c2 or src[4] or col
-        cols = (c2 - col + 1)
-    end
-
-    rows = math.max(1, rows or 1)
-    cols = math.max(1, cols or 1)
-
-    local maxRows = config.GRID_ROWS or 8
-    local maxCols = config.GRID_COLS or 8
-
-    row = math.max(1, math.min(maxRows, row))
-    col = math.max(1, math.min(maxCols, col))
-
-    if row + rows - 1 > maxRows then
-        rows = maxRows - row + 1
-    end
-    if col + cols - 1 > maxCols then
-        cols = maxCols - col + 1
-    end
-
-    return { row = row, rows = rows, col = col, cols = cols }
-end
-
--- Helpers moved into display_engine.lua
-
--- Minimal placeholder for widget mode (like LibGUI/loadable.lua example)
-local function drawWidgetPlaceholder(wgt)
-    local x = wgt.zone.x
-    local y = wgt.zone.y
-    local w = wgt.zone.w
-    local h = wgt.zone.h
-    lcd.drawRectangle(x, y, w, h, COLOR_THEME_PRIMARY3)
-    lcd.drawText(x + w / 2, y + h / 2 - 12, "RFApp v" .. APP_VERSION, DBLSIZE + CENTER + VCENTER + COLOR_THEME_PRIMARY2)
-    lcd.drawText(x + w / 2, y + h / 2 + 18, "Long press to launch", CENTER + VCENTER + COLOR_THEME_PRIMARY2)
-end
 
 update = function(wgt, options)
     if (wgt == nil) then return end
@@ -427,7 +369,7 @@ local function create(zone, options)
 
     update(wgt, options)
     wgt._appModeActive = false
-    wgt.rfLogo = loadRFLogo()
+    wgt.rfLogo = helpers.loadRFLogo()
     config.rateAudioEnabled = wgt.rateAudioEnabled
     return wgt
 end
@@ -566,7 +508,7 @@ local function refresh(wgt, event, touchState)
     end
     
     -- Detect app mode transition to refresh cached state
-    local appNow = isAppMode(wgt, event)
+    local appNow = helpers.isAppMode(wgt, event)
     local appModeActive = wgt._appModeActive
     
     if appNow and not appModeActive then
@@ -585,7 +527,11 @@ local function refresh(wgt, event, touchState)
 
         -- Always render menu button and apps for consistent display
         if menuDrawAndHandle then
-            menuDrawAndHandle(wgt, event, touchState, config, normalizeGridSpan)
+            -- Wrap normalizeGridSpan to include config parameter
+            local normalizeGridSpanWrapper = function(span, defaultSpan)
+                return helpers.normalizeGridSpan(span, defaultSpan, config)
+            end
+            menuDrawAndHandle(wgt, event, touchState, config, normalizeGridSpanWrapper)
         end
 
         -- Track telemetry changes for optimization
@@ -631,7 +577,7 @@ local function refresh(wgt, event, touchState)
     end
 
     -- Widget mode (embedded) - show placeholder only
-    drawWidgetPlaceholder(wgt)
+    helpers.drawWidgetPlaceholder(wgt, APP_VERSION)
 end
 
 return { name = config.app_name, options = config.options, create = create, update = update, background = background, refresh = refresh }

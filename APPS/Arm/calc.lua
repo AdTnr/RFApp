@@ -9,9 +9,9 @@ local getValue = getValue
 local stateMap = {
     [0] = { label = "SAFE",    name = "SAFE_NEVER_ARMED",   bg = GREEN,                 fg = BLACK },
     [1] = { label = "ARMED",   name = "ARMED",              bg = RED,                   fg = WHITE },
-    [2] = { label = "SAFE",    name = "SAFE_WAS_ARMED",     bg = GREEN,                 fg = GREEN },
+    [2] = { label = "SAFE",    name = "SAFE_WAS_ARMED",     bg = GREEN,                 fg = BLACK },
     [3] = { label = "ARMED",   name = "ARMED_WAS_ARMED",    bg = RED,                   fg = WHITE },
-    [4] = { label = "SAFE",    name = "SAFE_PREARMED",      bg = GREEN,                 fg = GREEN },
+    [4] = { label = "SAFE",    name = "SAFE_PREARMED",      bg = GREEN,                 fg = BLACK },
     [5] = { label = "ARMED",   name = "ARMED_PREARMED",     bg = RED,                   fg = WHITE },
 }
 

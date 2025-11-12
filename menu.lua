@@ -365,7 +365,7 @@ end
 local function drawAndHandleMenuButton(wgt, event, touchState, config, normalizeGridSpan)
     -- Cache grid calculations to avoid recalculation every frame
     if not wgt.cachedGridSpan then
-        wgt.cachedGridSpan = normalizeGridSpan(config.BTN_GRID, { row = 8, rows = 1, col = 7, cols = 2 })
+        wgt.cachedGridSpan = normalizeGridSpan(config.BTN_GRID, { row = 8, rows = 1, col = 7, cols = 2 }, config)
         wgt.cachedCellW = math.floor(LCD_W / config.GRID_COLS)
         wgt.cachedCellH = math.floor(LCD_H / config.GRID_ROWS)
     end
