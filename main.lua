@@ -11,6 +11,11 @@
 ]]
 
 -- Changelog:
+-- 0.61: Added BEC app for BEC voltage measurement (Vbec telemetry sensor) with minimum voltage tracking (2x2 grid, right side)
+-- 0.60: Removed minimum amps tracking - only maximum amps is tracked now
+-- 0.59: Added min/max tracking for Amps app (only updates when governor is ACTIVE, same as RPM)
+-- 0.58: Added audio playback for Governor state changes (Gov_Active, Spoolup, Hold, Autorotation, Bailout, Bypass, Motor_Off)
+-- 0.57: Added Amps app for current measurement (Curr telemetry sensor) with debug override
 -- 0.56: Refactored - extracted helper functions (isAppMode, loadRFLogo, normalizeGridSpan, drawWidgetPlaceholder) to helpers.lua
 -- 0.53: Added RPM min/max tracking (only updates when governor is ACTIVE), added flashing background to Arm display when armed
 -- 0.52: Removed dirty flag system - provided no optimization since EdgeTX clears screen every frame (must render always)
@@ -42,7 +47,7 @@
 -- Brief: Entry point for RFApp – initializes shared telemetry, lays out apps via grid,
 -- draws widget placeholder in non-app mode, and handles audio/alerts in background.
 
-local APP_VERSION = "0.56"
+local APP_VERSION = "0.61"
 
 -- Load internal modules (copied from RFBattery subset)
 --Main modules
@@ -96,11 +101,20 @@ local moduleRegistry = {
     Gov = {
         calc = "APPS/Gov/calc.lua",
         display = "APPS/Gov/display.lua",
+        audio = "APPS/Gov/audio.lua",
     },
     Rescue = {
         calc = "APPS/Rescue/calc.lua",
         display = "APPS/Rescue/display.lua",
         audio = "APPS/Rescue/audio.lua",
+    },
+    Amps = {
+        calc = "APPS/Amps/calc.lua",
+        display = "APPS/Amps/display.lua",
+    },
+    BEC = {
+        calc = "APPS/BEC/calc.lua",
+        display = "APPS/BEC/display.lua",
     },
 }
 
@@ -166,10 +180,17 @@ local rpmDisplay = (appModules.Rpm and appModules.Rpm.display) or {}
 
 local govCalc = (appModules.Gov and appModules.Gov.calc) or {}
 local govDisplay = (appModules.Gov and appModules.Gov.display) or {}
+local govAudio = (appModules.Gov and appModules.Gov.audio) or {}
 
 local rescueCalc = (appModules.Rescue and appModules.Rescue.calc) or {}
 local rescueDisplay = (appModules.Rescue and appModules.Rescue.display) or {}
 local rescueAudio = (appModules.Rescue and appModules.Rescue.audio) or {}
+
+local ampsCalc = (appModules.Amps and appModules.Amps.calc) or {}
+local ampsDisplay = (appModules.Amps and appModules.Amps.display) or {}
+
+local becCalc = (appModules.BEC and appModules.BEC.calc) or {}
+local becDisplay = (appModules.BEC and appModules.BEC.display) or {}
 
 -- Cache globals
 local getValue = getValue
@@ -249,6 +270,12 @@ update = function(wgt, options)
             end,
             gov = function(w, rx, ry, rw, rh)
                 if govDisplay.draw then govDisplay.draw(w, rx, ry, rw, rh) end
+            end,
+            amps = function(w, rx, ry, rw, rh)
+                if ampsDisplay.draw then ampsDisplay.draw(w, rx, ry, rw, rh) end
+            end,
+            bec = function(w, rx, ry, rw, rh)
+                if becDisplay.draw then becDisplay.draw(w, rx, ry, rw, rh) end
             end,
         }, wgt.rfLogo)
     end
@@ -341,6 +368,12 @@ local function create(zone, options)
         rpmMin = nil,
         rpmMax = nil,
 
+        -- Amps max tracking (initialized in Amps/calc.lua)
+        ampsMax = nil,
+
+        -- BEC min tracking (initialized in BEC/calc.lua)
+        becMin = nil,
+
 
         -- Cached grid calculations
         cachedGridSpan = nil,
@@ -387,6 +420,8 @@ local function background(wgt)
     local battAudioHandle = battAudio.handleBatteryAlerts
     local rpmCalcUpdate = rpmCalc.update
     local govCalcUpdate = govCalc.update
+    local ampsCalcUpdate = ampsCalc.update
+    local becCalcUpdate = becCalc.update
     local profileAudioHandlePid = profileAudio.handlePidAudio
     local profileAudioHandleRate = profileAudio.handleRateAudio
 
@@ -423,6 +458,7 @@ local function background(wgt)
     local govValue = telem.gov
     if govValue ~= (wgt._lastGovValue or -999) then
         if govCalcUpdate then govCalcUpdate(wgt, config) end
+        if govAudioHandle then govAudioHandle(wgt, config) end
         wgt._lastGovValue = govValue
     elseif wgt.govValue == nil then
         -- Ensure govValue is initialized on first run (for RPM min/max tracking)
@@ -443,6 +479,12 @@ local function background(wgt)
     if rpmValue ~= (wgt._lastRpmValue or -999) then
         wgt._lastRpmValue = rpmValue
     end
+
+    -- Amps state - always calculate
+    if ampsCalcUpdate then ampsCalcUpdate(wgt, config) end
+
+    -- BEC state - always calculate
+    if becCalcUpdate then becCalcUpdate(wgt, config) end
 
     -- PID/Rate state - check if values changed
     if telem.pid ~= (wgt._lastPidValue or -999) or telem.rate ~= (wgt._lastRateValue or -999) then
@@ -553,7 +595,7 @@ local function refresh(wgt, event, touchState)
         end
 
         -- Events fullscreen toggle (always handle interactions)
-        if touchState and event == EVT_TOUCH_TAP then
+            if touchState and event == EVT_TOUCH_TAP then
             if wgtUi and wgtUi.eventsOpen then
                 wgtUi.eventsOpen = false
             else
@@ -571,7 +613,7 @@ local function refresh(wgt, event, touchState)
 
         if wgtUi and wgtUi.eventsOpen then
             if eventsDisplayDrawFull then eventsDisplayDrawFull(wgt) end
-            return
+                return
         end
         return
     end

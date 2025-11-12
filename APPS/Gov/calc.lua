@@ -8,7 +8,7 @@ local lcd = lcd
 local getValue = getValue
 
 local stateMap = {
-    [0] = { label = "OFF",     name = "GOV_OFF",   bg = lcd.RGB(60, 60, 60),   fg = lcd.RGB(255, 255, 255) },
+    [0] = { label = "GOV OFF", name = "GOV_OFF",   bg = lcd.RGB(60, 60, 60),   fg = lcd.RGB(255, 255, 255) },
     [1] = { label = "IDLE",    name = "IDLE",      bg = lcd.RGB(0, 150, 255),  fg = COLOR_THEME_PRIMARY1 },
     [2] = { label = "SPOOLUP", name = "SPOOLUP",   bg = YELLOW,                 fg = COLOR_THEME_PRIMARY1 },
     [3] = { label = "RECOVERY",name = "RECOVERY",  bg = YELLOW,                 fg = COLOR_THEME_PRIMARY1 },

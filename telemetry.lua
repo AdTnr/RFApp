@@ -87,6 +87,8 @@ function M.update(wgt, config)
         t.pid  = (wgt.debug and wgt.debug.pid) or dbg.PID or t.pid
         t.rate = (wgt.debug and wgt.debug.rate) or dbg.RATE or t.rate
         t.resc = (wgt.debug and wgt.debug.resc) or dbg.RESC or t.resc
+        t.curr = (wgt.debug and wgt.debug.curr) or dbg.CURR or t.curr
+        t.vbec = (wgt.debug and wgt.debug.vbec) or dbg.VBEC or t.vbec
     else
         -- Fast-changing sensors: Read every frame (arm, pid, rate, resc)
         t.arm = getValue(config.SENSOR_ARM)
@@ -99,21 +101,36 @@ function M.update(wgt, config)
         
         t.resc = getValue(config.SENSOR_RESC)
         
-        -- Medium-changing sensors: Read every 2 frames (rssi, rpm, gov)
+        -- Medium-changing sensors: Read every 2 frames (rssi, rpm, gov, curr)
         -- Read on first frame or every 2 frames thereafter
         if frameCounter == 1 or frameCounter % 2 == 0 then
             t.rssi = getRSSI()
             t.rpm = getValue(config.SENSOR_RPM)
             t.gov = getValue(config.SENSOR_GOV)
+            t.curr = getValue(config.SENSOR_CURR)
+        else
+            -- Preserve last values when not reading
+            t.rssi = t.rssi or 0
+            t.rpm = t.rpm or 0
+            t.gov = t.gov or 0
+            t.curr = t.curr or 0
         end
         
-        -- Slow-changing sensors: Read every 5 frames (volt, cells, pcnt, mah)
+        -- Slow-changing sensors: Read every 5 frames (volt, cells, pcnt, mah, vbec)
         -- Read on first frame or every 5 frames thereafter
         if frameCounter == 1 or frameCounter % 5 == 0 then
             t.volt = getValue(config.SENSOR_VOLT)
             t.cells = getValue(config.SENSOR_CELLS)
             t.pcnt = getValue(config.SENSOR_PCNT)
             t.mah = getValue(config.SENSOR_MAH)
+            t.vbec = getValue(config.SENSOR_VBEC)
+        else
+            -- Preserve last values when not reading
+            t.volt = t.volt or 0
+            t.cells = t.cells or 0
+            t.pcnt = t.pcnt or 0
+            t.mah = t.mah or 0
+            t.vbec = t.vbec or 0
         end
 
 

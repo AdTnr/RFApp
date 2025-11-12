@@ -247,6 +247,18 @@ function M.new()
                 drawFns.signal(w, rx, ry, rw, rh)
             end, sgGrid, 0)
         end
+        if drawFns and drawFns.amps then
+            local ampsGrid = resolveGrid(config, config.Apps and config.Apps.Amps and config.Apps.Amps.GRID, { row = 2, rows = 1, col = 7, cols = 1 })
+            engine.placeWidgetGrid("amps", function(w, rx, ry, rw, rh)
+                drawFns.amps(w, rx, ry, rw, rh)
+            end, ampsGrid, 0)
+        end
+        if drawFns and drawFns.bec then
+            local becGrid = resolveGrid(config, config.Apps and config.Apps.BEC and config.Apps.BEC.GRID, { row = 2, rows = 2, col = 7, cols = 2 })
+            engine.placeWidgetGrid("bec", function(w, rx, ry, rw, rh)
+                drawFns.bec(w, rx, ry, rw, rh)
+            end, becGrid, 0)
+        end
         if drawFns and drawFns.rpm then
             local rpmGrid = resolveGrid(config, config.Apps and config.Apps.Rpm and config.Apps.Rpm.GRID, { row = 3, rows = 2, col = 1, cols = 2 })
             engine.placeWidgetGrid("rpm", function(w, rx, ry, rw, rh)

@@ -52,6 +52,21 @@ M.Sounds = {
             critical = audioFile("Battery_Critical.wav"),
         },
     },
+
+    Gov = {
+        states = {
+            [0] = audioFile("Motor_Off.wav"),      -- GOV OFF
+            [1] = nil,                             -- IDLE (no audio file)
+            [2] = audioFile("Spoolup.wav"),        -- SPOOLUP
+            [3] = nil,                             -- RECOVERY (no audio file)
+            [4] = audioFile("Gov_Active.wav"),     -- ACTIVE
+            [5] = audioFile("Hold.wav"),           -- HOLD
+            [6] = nil,                             -- FALLBACK (no audio file)
+            [7] = audioFile("Autorotation.wav"),   -- AUTO
+            [8] = audioFile("Bailout.wav"),        -- BAILOUT
+            [9] = audioFile("Bypass.wav"),         -- BYPASS
+        },
+    },
 }
 
 M.RATE_AUDIO_DEFAULT = false
@@ -102,6 +117,8 @@ M.SENSOR_GOV   = "Gov"
 M.SENSOR_PID   = "PID#"
 M.SENSOR_RESC  = "Resc"
 M.SENSOR_RATE  = "RTE#"
+M.SENSOR_CURR  = "Curr"
+M.SENSOR_VBEC  = "Vbec"
 
 ---------------------------------------------------------------------
 -- 5. Widget Options & Presentation Defaults
@@ -183,6 +200,14 @@ M.Apps = {
     Signal = {
         enabled = true,
         GRID = { row = 1, rows = 1, col = 7, cols = 1 },
+    },
+    Amps = {
+        enabled = true,
+        GRID = { row = 2, rows = 2, col = 1, cols = 2 },
+    },
+    BEC = {
+        enabled = true,
+        GRID = { row = 2, rows = 2, col = 7, cols = 2 },
     },
     Rate = {
         enabled = true,

@@ -54,7 +54,9 @@ local function openSettingsPage(wgt)
             gov = 1,
             rate = 2,
             pid = 1,
-            resc = 0
+            resc = 0,
+            curr = 0,
+            vbec = 0
         }
     end
 
@@ -341,6 +343,38 @@ local function openSettingsPage(wgt)
                                     w = 70,
                                     get = function() return wgt.debug.resc end,
                                     set = function(v) wgt.debug.resc = v end,
+                                },
+                            },
+                        },
+                        {
+                            type = "box",
+                            flexFlow = lvgl.FLOW_ROW,
+                            children = {
+                                { type = "label", text = "Curr:", w = 80 },
+                                {
+                                    type = "numberEdit",
+                                    min = 0,
+                                    max = 200,
+                                    step = 0.1,
+                                    w = 70,
+                                    get = function() return wgt.debug.curr end,
+                                    set = function(v) wgt.debug.curr = v end,
+                                },
+                            },
+                        },
+                        {
+                            type = "box",
+                            flexFlow = lvgl.FLOW_ROW,
+                            children = {
+                                { type = "label", text = "Vbec:", w = 80 },
+                                {
+                                    type = "numberEdit",
+                                    min = 0,
+                                    max = 20,
+                                    step = 0.01,
+                                    w = 70,
+                                    get = function() return wgt.debug.vbec end,
+                                    set = function(v) wgt.debug.vbec = v end,
                                 },
                             },
                         },
