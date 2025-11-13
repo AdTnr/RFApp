@@ -259,6 +259,12 @@ function M.new()
                 drawFns.bec(w, rx, ry, rw, rh)
             end, becGrid, 0)
         end
+        if drawFns and drawFns.name then
+            local nameGrid = resolveGrid(config, config.Apps and config.Apps.Name and config.Apps.Name.GRID, { row = 5, rows = 1, col = 6, cols = 2 })
+            engine.placeWidgetGrid("name", function(w, rx, ry, rw, rh)
+                drawFns.name(w, rx, ry, rw, rh)
+            end, nameGrid, 0)
+        end
         if drawFns and drawFns.rpm then
             local rpmGrid = resolveGrid(config, config.Apps and config.Apps.Rpm and config.Apps.Rpm.GRID, { row = 3, rows = 2, col = 1, cols = 2 })
             engine.placeWidgetGrid("rpm", function(w, rx, ry, rw, rh)

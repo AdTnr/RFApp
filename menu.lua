@@ -44,19 +44,19 @@ local function openSettingsPage(wgt)
     if not wgt.debug then
         wgt.debug = {
             enabled = false,
-            volt = 12.6,
-            cells = 4,
+            volt = 52,
+            cells = 12,
             pcnt = 85,
-            mah = 1200,
-            arm = 0,
-            rssi = 95,
-            rpm = 1200,
-            gov = 1,
-            rate = 2,
-            pid = 1,
+            mah = 759,
+            arm = 1,
+            rssi = 90,
+            rpm = 2214,
+            gov = 4,
+            rate = 3,
+            pid = 3,
             resc = 0,
-            curr = 0,
-            vbec = 0
+            curr = 52,
+            vbec = 8.4
         }
     end
 
@@ -274,7 +274,7 @@ local function openSettingsPage(wgt)
                                 {
                                     type = "numberEdit",
                                     min = 0,
-                                    max = 50000,
+                                    max = 3000,
                                     step = 100,
                                     w = 70,
                                     get = function() return wgt.debug.rpm end,

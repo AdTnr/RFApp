@@ -187,11 +187,11 @@ M.Apps = {
     },
     Gov = {
         enabled = true,
-        GRID = { row = 1, rows = 1, col = 3, cols = 2 },
+        GRID = { row = 1, rows = 1, col = 4, cols = 2 },
     },
     Pid = {
         enabled = true,
-        GRID = { row = 1, rows = 1, col = 5, cols = 1 },
+        GRID = { row = 1, rows = 1, col = 3, cols = 1 },
     },
     Logo = {
         enabled = true,
@@ -203,11 +203,15 @@ M.Apps = {
     },
     Amps = {
         enabled = true,
-        GRID = { row = 2, rows = 2, col = 1, cols = 2 },
+        GRID = { row = 2, rows = 4, col = 1, cols = 2 },
     },
     BEC = {
         enabled = true,
         GRID = { row = 2, rows = 2, col = 7, cols = 2 },
+    },
+    Name = {
+        enabled = true,
+        GRID = { row = 5, rows = 1, col = 7, cols = 2 },
     },
     Rate = {
         enabled = true,

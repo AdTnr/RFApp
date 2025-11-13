@@ -11,6 +11,7 @@
 ]]
 
 -- Changelog:
+-- 0.62: Added Name app to display current model name (3 columns wide, 1 row tall)
 -- 0.61: Added BEC app for BEC voltage measurement (Vbec telemetry sensor) with minimum voltage tracking (2x2 grid, right side)
 -- 0.60: Removed minimum amps tracking - only maximum amps is tracked now
 -- 0.59: Added min/max tracking for Amps app (only updates when governor is ACTIVE, same as RPM)
@@ -47,7 +48,7 @@
 -- Brief: Entry point for RFApp – initializes shared telemetry, lays out apps via grid,
 -- draws widget placeholder in non-app mode, and handles audio/alerts in background.
 
-local APP_VERSION = "0.61"
+local APP_VERSION = "0.62"
 
 -- Load internal modules (copied from RFBattery subset)
 --Main modules
@@ -115,6 +116,10 @@ local moduleRegistry = {
     BEC = {
         calc = "APPS/BEC/calc.lua",
         display = "APPS/BEC/display.lua",
+    },
+    Name = {
+        calc = "APPS/Name/calc.lua",
+        display = "APPS/Name/display.lua",
     },
 }
 
@@ -191,6 +196,9 @@ local ampsDisplay = (appModules.Amps and appModules.Amps.display) or {}
 
 local becCalc = (appModules.BEC and appModules.BEC.calc) or {}
 local becDisplay = (appModules.BEC and appModules.BEC.display) or {}
+
+local nameCalc = (appModules.Name and appModules.Name.calc) or {}
+local nameDisplay = (appModules.Name and appModules.Name.display) or {}
 
 -- Cache globals
 local getValue = getValue
@@ -276,6 +284,9 @@ update = function(wgt, options)
             end,
             bec = function(w, rx, ry, rw, rh)
                 if becDisplay.draw then becDisplay.draw(w, rx, ry, rw, rh) end
+            end,
+            name = function(w, rx, ry, rw, rh)
+                if nameDisplay.draw then nameDisplay.draw(w, rx, ry, rw, rh) end
             end,
         }, wgt.rfLogo)
     end
@@ -422,6 +433,7 @@ local function background(wgt)
     local govCalcUpdate = govCalc.update
     local ampsCalcUpdate = ampsCalc.update
     local becCalcUpdate = becCalc.update
+    local nameCalcUpdate = nameCalc.update
     local profileAudioHandlePid = profileAudio.handlePidAudio
     local profileAudioHandleRate = profileAudio.handleRateAudio
 
@@ -485,6 +497,9 @@ local function background(wgt)
 
     -- BEC state - always calculate
     if becCalcUpdate then becCalcUpdate(wgt, config) end
+
+    -- Name state - always calculate
+    if nameCalcUpdate then nameCalcUpdate(wgt, config) end
 
     -- PID/Rate state - check if values changed
     if telem.pid ~= (wgt._lastPidValue or -999) or telem.rate ~= (wgt._lastRateValue or -999) then

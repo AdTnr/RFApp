@@ -19,25 +19,32 @@ function M.update(wgt, config)
         wgt.ampsMax = wgt.ampsValue
     end
     
-    -- Only update max when governor is ACTIVE (state 4)
-    local govValue = wgt.govValue
-    if govValue == 4 then
-        -- Governor is ACTIVE - check if this is the first time entering ACTIVE state
-        if wgt._govWasActiveForAmps ~= true then
-            -- First time governor becomes ACTIVE - reset max to current Amps
-            wgt.ampsMax = wgt.ampsValue
-            wgt._govWasActiveForAmps = true
-        else
-            -- Governor was already ACTIVE - track max Amps normally
-            if wgt.ampsValue > wgt.ampsMax then
-                wgt.ampsMax = wgt.ampsValue
-            end
-        end
-    else
-        -- Governor is not ACTIVE - reset flag so max will reset next time it becomes active
-        wgt._govWasActiveForAmps = false
+    -- Track max Amps continuously
+    if wgt.ampsValue > wgt.ampsMax then
+        wgt.ampsMax = wgt.ampsValue
     end
-    -- If governor is not ACTIVE, max value remains unchanged (frozen)
+    
+    -- Calculate power (watts) = current (amps) * voltage (volts)
+    -- Use battery monitor voltage (vTotalLive) if available, otherwise use telemetry voltage
+    local voltage = wgt.vTotalLive or (wgt.telem and wgt.telem.volt) or 0
+    wgt.powerValue = wgt.ampsValue * voltage
+    
+    -- Initialize max power tracking if needed
+    if wgt.powerMax == nil then
+        wgt.powerMax = wgt.powerValue
+    end
+    
+    -- Track max power continuously
+    if wgt.powerValue > wgt.powerMax then
+        wgt.powerMax = wgt.powerValue
+    end
+    
+    -- Calculate horsepower (HP) = power (watts) / 745.7
+    -- 1 HP = 745.7 watts (mechanical horsepower)
+    wgt.hpower = wgt.powerValue / 745.7
+    
+    -- Calculate max horsepower from max power
+    wgt.hpowerMax = wgt.powerMax / 745.7
 end
 
 return M
