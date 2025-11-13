@@ -23,6 +23,9 @@ function M.draw(wgt, x, y, w, h)
     
     -- Draw max Amps at bottom (smaller text)
     lcd.drawText(x + 2, y + h - 18, maxStr, BOLD + LEFT + COLOR_THEME_SECONDARY2)
+
+    --Experimental Bar
+    --lcd.drawRectangle(x, y, 30, 100, COLOR_THEME_PRIMARY2, 1)
 end
 
 return M

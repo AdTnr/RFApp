@@ -11,19 +11,21 @@ function M.draw(wgt, x, y, w, h)
     
     -- Format RPM values (RPM values are always integers)
     local rpmStr = string.format("%d", rpm)
-    local minStr = string.format("%d Min", rpmMin)
-    local maxStr = string.format("Max %d", rpmMax)
+    local minStr = string.format("%d Min -", rpmMin)
+    local maxStr = string.format("- Max %d", rpmMax)
     
     -- Draw background
     --lcd.drawFilledRectangle(x, y, w, h, COLOR_THEME_SECONDARY1)
-    lcd.drawRectangle(x, y, w, h, COLOR_THEME_PRIMARY2, 1)
+    --lcd.drawRectangle(x, y, w, h, COLOR_THEME_PRIMARY2, 1)
     
     -- Draw label "RPM" at top
     lcd.drawText(x + w/2, y + h - 18, "RPM", BOLD + CENTER + COLOR_THEME_PRIMARY2)
-    lcd.drawText(x + w/2, y + h/2 - 5, rpmStr, DBLSIZE + BOLD + CENTER + VCENTER + COLOR_THEME_PRIMARY2)
+    lcd.drawText(x + w/2, y + h/2 - 4, rpmStr, DBLSIZE + BOLD + CENTER + VCENTER + COLOR_THEME_PRIMARY2)
     -- Draw min/max RPM at bottom (smaller text)
-    lcd.drawText(x + 2, y + h - 18, minStr, BOLD + COLOR_THEME_SECONDARY2)
-    lcd.drawText(x + w - 2, y + h - 18, maxStr, BOLD + RIGHT + COLOR_THEME_SECONDARY2)
+    --lcd.drawText(x + 2, y + h - 18, minStr, BOLD + COLOR_THEME_SECONDARY2)
+    --lcd.drawText(x + w - 2, y + h - 18, maxStr, BOLD + RIGHT + COLOR_THEME_SECONDARY2)
+    lcd.drawText(x + w/2 - 20, y + h - 18, minStr, BOLD + RIGHT + COLOR_THEME_SECONDARY2)
+    lcd.drawText(x + w/2 + 20, y + h - 18, maxStr, BOLD + LEFT + COLOR_THEME_SECONDARY2)
 end
 
 return M

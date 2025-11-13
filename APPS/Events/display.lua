@@ -7,7 +7,7 @@ local events = loadScript("/WIDGETS/RFApp/APPS/Events/store.lua", "tcd")()
 function M.draw(wgt, x, y, w, h)
     local pad = 0
     local x0 = x + pad
-    local y0 = y + pad
+    local y0 = y + pad - 4  -- Move text up 
     -- No header; pack as many lines as fit, no top/bottom padding
     local lineHeight = 10
     local maxLines = math.max(1, math.floor(h / lineHeight))
