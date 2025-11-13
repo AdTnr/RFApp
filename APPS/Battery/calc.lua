@@ -95,39 +95,19 @@ function M.onTelemetryResetEvent(wgt, config)
 end
 
 function M.calculateBatteryData(wgt, config, filters, calc, audio)
-    local rssi = (wgt.telem and wgt.telem.rssi) or getRSSI()
+    -- Use global rfConnected flag from telemetry.lua (based on *Cnt heartbeat detection)
     local currentTime = getTime()
-    if rssi == 0 or rssi == nil then
-        if wgt.rssiDisconnectTime == 0 then
-            wgt.rssiDisconnectTime = currentTime
-        end
-        local elapsed = currentTime - wgt.rssiDisconnectTime
-        if elapsed >= config.RSSI_DISCONNECT_DELAY then
-            M.resetWidget(wgt, config)
-            return
-        else
-            wgt.isDataAvailable = false
-            return
-        end
-    else
-        if wgt.rssiDisconnectTime > 0 then
-            wgt.rssiDisconnectTime = 0
-        end
+    
+    -- Check if RotorFlight is connected (rfConnected flag set by telemetry.lua)
+    if wgt.rfConnected ~= true then
+        -- RotorFlight not connected - reset widget
+        M.resetWidget(wgt, config)
+        return
     end
-
-    if wgt.wasTelemetryLost then
-        wgt.telemReconnectTime = currentTime
-        wgt.wasTelemetryLost = false
-    end
-    if wgt.telemReconnectTime > 0 then
-        local elapsed = currentTime - wgt.telemReconnectTime
-        if elapsed < config.TELEMETRY_STABILIZATION_DELAY then
-            wgt.isDataAvailable = false
-            return
-        else
-            wgt.telemReconnectTime = 0
-            wgt.batInsDetectDeadline = currentTime + config.BAT_INSERTED_DETECT_WINDOW
-        end
+    
+    -- RotorFlight is connected - set battery inserted detection deadline immediately (no delay)
+    if wgt.batInsDetectDeadline == 0 then
+        wgt.batInsDetectDeadline = currentTime + config.BAT_INSERTED_DETECT_WINDOW
     end
 
     local v = (wgt.telem and wgt.telem.volt) or getValue(config.SENSOR_VOLT)

@@ -6,6 +6,9 @@ local getValue = getValue
 local getRSSI = getRSSI
 local getTime = getTime
 
+-- Load events module for logging RotorFlight connection/disconnection
+local events = loadScript("/WIDGETS/RFApp/APPS/Events/store.lua", "tcd")()
+
 -- Frame counter for telemetry read throttling
 local frameCounter = 0
 
@@ -89,8 +92,37 @@ function M.update(wgt, config)
         t.resc = (wgt.debug and wgt.debug.resc) or dbg.RESC or t.resc
         t.curr = (wgt.debug and wgt.debug.curr) or dbg.CURR or t.curr
         t.vbec = (wgt.debug and wgt.debug.vbec) or dbg.VBEC or t.vbec
+        t.cnt  = (wgt.debug and wgt.debug.cnt)  or dbg.CNT  or t.cnt
+        -- For debug mode, simulate heartbeat detection
+        -- If cnt is provided and > 0, assume connected (heartbeat active)
+        if t.cnt and t.cnt > 0 then
+            wgt._cntStoppedTime = nil  -- Reset timer when active
+            if wgt.rfConnected ~= true then
+                wgt.rfConnected = true
+                if events and events.append then
+                    events.append("RotorFlight Connected")
+                end
+            end
+        else
+            -- In debug mode, if cnt is 0 or nil, mark as disconnected after delay
+            if wgt.rfConnected == true then
+                local currentTime = getTime()
+                if wgt._cntStoppedTime == nil then
+                    wgt._cntStoppedTime = currentTime
+                else
+                    local elapsed = currentTime - wgt._cntStoppedTime
+                    if elapsed >= 100 then
+                        wgt.rfConnected = false
+                        wgt._cntStoppedTime = nil
+                        if events and events.append then
+                            events.append("RotorFlight Disconnected")
+                        end
+                    end
+                end
+            end
+        end
     else
-        -- Fast-changing sensors: Read every frame (arm, pid, rate, resc)
+        -- Fast-changing sensors: Read every frame (arm, pid, rate, resc, cnt)
         t.arm = getValue(config.SENSOR_ARM)
         
         -- Apply debouncing to PID and Rate telemetry (fast sensors)
@@ -100,6 +132,60 @@ function M.update(wgt, config)
         t.rate = debounceValue(wgt, "rate", rawRate, 50)
         
         t.resc = getValue(config.SENSOR_RESC)
+        t.cnt = getValue(config.SENSOR_CNT)
+        
+        -- RotorFlight heartbeat detection: *Cnt increments when RotorFlight is connected
+        -- If cnt stays stationary for more than 1 second, RotorFlight telemetry has stopped
+        local currentTime = getTime()
+        local currentCnt = t.cnt or 0
+        
+        if wgt._lastCntValue == nil then
+            -- First time - initialize
+            wgt._lastCntValue = currentCnt
+            wgt._cntStoppedTime = nil
+            if currentCnt > 0 then
+                wgt.rfConnected = true
+                if events and events.append then
+                    events.append("RotorFlight Connected")
+                end
+            else
+                wgt.rfConnected = false
+            end
+        else
+            local previousCnt = wgt._lastCntValue
+            
+            if currentCnt > previousCnt then
+                -- Heartbeat is active - RotorFlight is connected
+                wgt._cntStoppedTime = nil
+                if wgt.rfConnected ~= true then
+                    -- State changed from disconnected to connected
+                    wgt.rfConnected = true
+                    if events and events.append then
+                        events.append("RotorFlight Connected")
+                    end
+                end
+            else
+                -- Heartbeat stopped - start or update timer
+                if wgt._cntStoppedTime == nil then
+                    wgt._cntStoppedTime = currentTime
+                else
+                    -- Check if stopped for more than 1 second (100 ticks)
+                    local elapsed = currentTime - wgt._cntStoppedTime
+                    if elapsed >= 100 then
+                        -- Stopped for more than 1 second - mark as disconnected
+                        if wgt.rfConnected == true then
+                            -- State changed from connected to disconnected
+                            wgt.rfConnected = false
+                            if events and events.append then
+                                events.append("RotorFlight Disconnected")
+                            end
+                        end
+                    end
+                end
+            end
+            
+            wgt._lastCntValue = currentCnt
+        end
         
         -- Medium-changing sensors: Read every 2 frames (rssi, rpm, gov, curr)
         -- Read on first frame or every 2 frames thereafter

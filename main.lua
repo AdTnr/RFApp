@@ -11,6 +11,9 @@
 ]]
 
 -- Changelog:
+-- 0.65: Improved RotorFlight heartbeat detection - only marks as disconnected after 1 second of stopped heartbeat, added event logging for RotorFlight connection/disconnection
+-- 0.64: Added *Cnt sensor as RotorFlight heartbeat, updated Signal app RFL indicator to use *Cnt instead of RSSI, removed telemetry stabilization delays in Battery app (now uses *Cnt for immediate connection detection)
+-- 0.63: Removed ">" prefix character from model name display in Name app, added RPM stuck detection (sets to 0 if RPM stuck below 1000 RPM for 3+ seconds), set Amps bar visualization default range to 0-1A (auto-adjusts when max exceeds 1A)
 -- 0.62: Added Name app to display current model name (3 columns wide, 1 row tall)
 -- 0.61: Added BEC app for BEC voltage measurement (Vbec telemetry sensor) with minimum voltage tracking (2x2 grid, right side)
 -- 0.60: Removed minimum amps tracking - only maximum amps is tracked now
@@ -48,7 +51,7 @@
 -- Brief: Entry point for RFApp – initializes shared telemetry, lays out apps via grid,
 -- draws widget placeholder in non-app mode, and handles audio/alerts in background.
 
-local APP_VERSION = "0.62"
+local APP_VERSION = "0.65"
 
 -- Load internal modules (copied from RFBattery subset)
 --Main modules

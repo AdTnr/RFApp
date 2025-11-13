@@ -119,6 +119,7 @@ M.SENSOR_RESC  = "Resc"
 M.SENSOR_RATE  = "RTE#"
 M.SENSOR_CURR  = "Curr"
 M.SENSOR_VBEC  = "Vbec"
+M.SENSOR_CNT   = "*Cnt"
 
 ---------------------------------------------------------------------
 -- 5. Widget Options & Presentation Defaults

@@ -60,10 +60,11 @@ function M.draw(wgt, x, y, w, h)
     
     -- Draw max Amps at bottom (smaller text)
     lcd.drawText(textoffset, y + 45, maxStr, BOLD + LEFT + COLOR_THEME_SECONDARY2)
-    lcd.drawText(textoffset - 4, y + 63, "Power", BOLD + LEFT + COLOR_THEME_PRIMARY2)
-    lcd.drawText(textoffset, y + 81, powerStr, BOLD + LEFT + COLOR_THEME_PRIMARY2)
-    lcd.drawText(textoffset, y + 99, hpowerStr, BOLD + LEFT + COLOR_THEME_PRIMARY2)
-    lcd.drawText(textoffset, y + 117, maxPowerStr, BOLD + LEFT + COLOR_THEME_SECONDARY2)
+    -- POWEERRRR
+    lcd.drawText(textoffset - 4, y + 67, "Power", BOLD + LEFT + COLOR_THEME_PRIMARY2)
+    lcd.drawText(textoffset, y + 81, powerStr, DBLSIZE + LEFT + COLOR_THEME_PRIMARY2)
+    --lcd.drawText(textoffset, y + 99, hpowerStr, BOLD + LEFT + COLOR_THEME_PRIMARY2)
+    lcd.drawText(textoffset, y + 113, maxPowerStr, BOLD + LEFT + COLOR_THEME_SECONDARY2)
 
 
     -- Bar visualization
@@ -76,10 +77,12 @@ function M.draw(wgt, x, y, w, h)
     -- Draw bar border
     lcd.drawRectangle(barX, barY, barwidth, barH, COLOR_THEME_PRIMARY2, borderWidth)
     
-    -- Calculate fill percentage based on amps relative to ampsMax
+    -- Calculate fill percentage based on amps relative to barMax
+    -- Default range is 0-1A, but use ampsMax if it exceeds 1A
+    local barMax = math.max(1, ampsMax)
     -- Remain empty when amps equals zero
-    if amps > 0 and ampsMax > 0 then
-        local percent = math.min(100, (amps / ampsMax) * 100)
+    if amps > 0 and barMax > 0 then
+        local percent = math.min(100, (amps / barMax) * 100)
         local fillHeight = math.floor(percent / 100 * barH)
         
         if fillHeight > 0 then

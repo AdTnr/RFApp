@@ -49,6 +49,13 @@ function M.draw(wgt, x, y, w, h)
     local rssi = (wgt.telem and wgt.telem.rssi) or 0
     if rssi < 0 then rssi = 0 elseif rssi > 100 then rssi = 100 end
 
+    -- Determine if RotorFlight telemetry is established (uses global rfConnected flag from telemetry.lua)
+    local telemetryEstablished = (wgt.rfConnected == true)
+    local rflColor = telemetryEstablished and GREEN or lcd.RGB(90, 90, 90)
+
+    -- Draw "RFL" text in top-left corner
+    lcd.drawText(x, y-1, "RFL", SMLSIZE + LEFT + rflColor)
+
     -- Full-bleed bars filling the grid cell
     local pad = 2
     drawBars(x + pad, y, w - 2 * pad, h, rssi)
