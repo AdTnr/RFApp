@@ -58,13 +58,18 @@ function M.draw(wgt, x, y, w, h)
     -- Draw current value centered, large and bold
     lcd.drawText(textoffset, y + 33, ampsStr, DBLSIZE + LEFT + VCENTER + COLOR_THEME_PRIMARY2)
     
-    -- Draw max Amps at bottom (smaller text)
-    lcd.drawText(textoffset, y + 45, maxStr, BOLD + LEFT + COLOR_THEME_SECONDARY2)
+    -- Draw max Amps at bottom (smaller text) - only if enabled
+    if wgt.showMaxMinValues ~= false then
+        lcd.drawText(textoffset, y + 45, maxStr, BOLD + LEFT + COLOR_THEME_SECONDARY2)
+    end
     -- POWEERRRR
     lcd.drawText(textoffset - 4, y + 67, "Power", BOLD + LEFT + COLOR_THEME_PRIMARY2)
     lcd.drawText(textoffset, y + 81, powerStr, DBLSIZE + LEFT + COLOR_THEME_PRIMARY2)
     --lcd.drawText(textoffset, y + 99, hpowerStr, BOLD + LEFT + COLOR_THEME_PRIMARY2)
-    lcd.drawText(textoffset, y + 113, maxPowerStr, BOLD + LEFT + COLOR_THEME_SECONDARY2)
+    -- Draw max Power at bottom (smaller text) - only if enabled
+    if wgt.showMaxMinValues ~= false then
+        lcd.drawText(textoffset, y + 113, maxPowerStr, BOLD + LEFT + COLOR_THEME_SECONDARY2)
+    end
 
 
     -- Bar visualization

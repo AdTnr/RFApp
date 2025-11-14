@@ -21,8 +21,10 @@ function M.draw(wgt, x, y, w, h)
     -- Draw voltage value right-aligned, large and bold
     lcd.drawText(x + w - 2, y + h/2, becStr, DBLSIZE + RIGHT + VCENTER + COLOR_THEME_PRIMARY2)
     
-    -- Draw min BEC voltage at bottom (smaller text)
-    lcd.drawText(x + w - 2, y + h - 18, minStr, BOLD + RIGHT + COLOR_THEME_SECONDARY2)
+    -- Draw min BEC voltage at bottom (smaller text) - only if enabled
+    if wgt.showMaxMinValues ~= false then
+        lcd.drawText(x + w - 2, y + h - 18, minStr, BOLD + RIGHT + COLOR_THEME_SECONDARY2)
+    end
 end
 
 return M

@@ -21,11 +21,13 @@ function M.draw(wgt, x, y, w, h)
     -- Draw label "RPM" at top
     lcd.drawText(x + w/2, y + h - 18, "RPM", BOLD + CENTER + COLOR_THEME_PRIMARY2)
     lcd.drawText(x + w/2, y + h/2 - 6, rpmStr, DBLSIZE + BOLD + CENTER + VCENTER + COLOR_THEME_PRIMARY2)
-    -- Draw min/max RPM at bottom (smaller text)
-    --lcd.drawText(x + 2, y + h - 18, minStr, BOLD + COLOR_THEME_SECONDARY2)
-    --lcd.drawText(x + w - 2, y + h - 18, maxStr, BOLD + RIGHT + COLOR_THEME_SECONDARY2)
-    lcd.drawText(x + w/2 - 20, y + h - 18, minStr, BOLD + RIGHT + COLOR_THEME_SECONDARY2)
-    lcd.drawText(x + w/2 + 20, y + h - 18, maxStr, BOLD + LEFT + COLOR_THEME_SECONDARY2)
+    -- Draw min/max RPM at bottom (smaller text) - only if enabled
+    if wgt.showMaxMinValues ~= false then
+        --lcd.drawText(x + 2, y + h - 18, minStr, BOLD + COLOR_THEME_SECONDARY2)
+        --lcd.drawText(x + w - 2, y + h - 18, maxStr, BOLD + RIGHT + COLOR_THEME_SECONDARY2)
+        lcd.drawText(x + w/2 - 20, y + h - 18, minStr, BOLD + RIGHT + COLOR_THEME_SECONDARY2)
+        lcd.drawText(x + w/2 + 20, y + h - 18, maxStr, BOLD + LEFT + COLOR_THEME_SECONDARY2)
+    end
 end
 
 return M

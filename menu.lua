@@ -56,7 +56,8 @@ local function openSettingsPage(wgt)
             pid = 3,
             resc = 0,
             curr = 52,
-            vbec = 8.4
+            vbec = 8.4,
+            rfConnected = true
         }
     end
 
@@ -68,6 +69,11 @@ local function openSettingsPage(wgt)
     -- Initialize FPS counter enabled setting (default to false)
     if wgt.fpsEnabled == nil then
         wgt.fpsEnabled = false
+    end
+
+    -- Initialize show max/min values setting (default to true)
+    if wgt.showMaxMinValues == nil then
+        wgt.showMaxMinValues = true
     end
 
     wgt.ui.settingsValue = wgt.ui.settingsValue or 0
@@ -136,6 +142,22 @@ local function openSettingsPage(wgt)
                             get = function() return wgt.fpsEnabled and 1 or 0 end,
                             set = function(v)
                                 wgt.fpsEnabled = (v ~= 0)
+                            end,
+                        },
+                    },
+                },
+
+                -- Show Max/Min Values Toggle
+                {
+                    type = "box",
+                    flexFlow = lvgl.FLOW_ROW,
+                    children = {
+                        { type = "label", text = "Show Max/Min:", font = BOLD, w = 120 },
+                        {
+                            type = "toggle",
+                            get = function() return wgt.showMaxMinValues and 1 or 0 end,
+                            set = function(v)
+                                wgt.showMaxMinValues = (v ~= 0)
                             end,
                         },
                     },
@@ -375,6 +397,18 @@ local function openSettingsPage(wgt)
                                     w = 70,
                                     get = function() return wgt.debug.vbec end,
                                     set = function(v) wgt.debug.vbec = v end,
+                                },
+                            },
+                        },
+                        {
+                            type = "box",
+                            flexFlow = lvgl.FLOW_ROW,
+                            children = {
+                                { type = "label", text = "RF Connected:", w = 80 },
+                                {
+                                    type = "toggle",
+                                    get = function() return wgt.debug.rfConnected and 1 or 0 end,
+                                    set = function(v) wgt.debug.rfConnected = (v ~= 0) end,
                                 },
                             },
                         },

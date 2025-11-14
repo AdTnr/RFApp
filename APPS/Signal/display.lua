@@ -54,7 +54,7 @@ function M.draw(wgt, x, y, w, h)
     local rflColor = telemetryEstablished and GREEN or lcd.RGB(90, 90, 90)
 
     -- Draw "RFL" text in top-left corner
-    lcd.drawText(x, y-1, "RFL", SMLSIZE + LEFT + rflColor)
+    lcd.drawText(x, y-2, "RF", SMLSIZE + LEFT + rflColor)
 
     -- Full-bleed bars filling the grid cell
     local pad = 2

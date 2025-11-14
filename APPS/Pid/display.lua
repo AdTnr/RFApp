@@ -29,7 +29,7 @@ function M.draw(wgt, x, y, w, h)
     local labelStyle = BOLD + LEFT + COLOR_THEME_PRIMARY2
     local valueStyle = BOLD + RIGHT + COLOR_THEME_PRIMARY2
 
-    local topY = y - 1
+    local topY = y - 2
     local bottomY = y + math.max(12, math.floor(h / 2)) - 1
 
     lcd.drawText(x + 2, topY, "PID", labelStyle)
